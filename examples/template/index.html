@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <!--
+      @file {One-line description of tool}
+      @author {Name} ({e-mail address})
+      @copyright {Year}
+      @license {name of license}
+    -->
+  <head>
+    <meta charset="utf-8">
+    <!-- Replace the following with your header elements -->
+    <title>Sleep diary - {name of tool}</title>
+    <link rel="stylesheet" type="text/css" href="index.css">
+  </head>
+  <body>
+
+
+    <!-- Replace the following with your HTML -->
+    <h1>Raw diary contents</h1>
+    <p>
+      Your sleep diary is stored as a JavaScript object.  The following JSON representation is only approximate.  One important example is that "SLEEP" events are shown here as strings, but are represented internally as numbers.  Another example is that "WAKE" events are not shown at all, because "WAKE" is the default value for the "event" field.
+      <pre id="example-diary-contents"></pre>
+    </p>
+    <h1>Analysed data</h1>
+    <p>
+      We can also generate high-level information from the raw event data above.
+      <pre id="example-analysis-contents"></pre>
+    </p>
+    <h1>URL Parameters</h1>
+    <p>
+      Sleep Diary Toolkit provides a convenience function to parse URL parameters.  For example, some apps are easier to use if one page contains a form where the user can specify what they want, and the other displays the result based on URL parameters.  Try loading <a href="?multi=value1&multi=value2&single=value">this page with some example parameters</a>.
+      <pre id="example-url-parameters"></pre>
+    </p>
+
+
+    <!-- Load Sleep Diary Toolkit -->
+    <script src="../../sleep-diary-toolkit.js"></script>
+    
+    <!-- Replace the following with your JavaScript -->
+    <script src="index.js"></script>
+
+
+  </body>
+</html>

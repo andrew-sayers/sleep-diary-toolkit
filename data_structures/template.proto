@@ -1,0 +1,20 @@
+/**
+ * @file <description of your data structure>
+ * @author <name and e-mail address>
+ * @copyright <year>
+ * @license MIT
+ */
+
+syntax = "proto3";
+
+message name_type {
+
+    // your fields go here
+
+}
+
+/*
+
+After writing your protobuf file, add it to the PROTOBUF_DATA_STRUCTURES variable in ../Makefile
+
+*/

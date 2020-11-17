@@ -1,0 +1,64 @@
+/**
+ * @file A single diary entry
+ * @author Andrew Sayers <andrew-github.com@pileofstuff.org>
+ * @copyright 2020
+ * @license MIT
+ */
+
+syntax = "proto3";
+
+message entry_type {
+
+    /**
+     * An entry describes an event of a particular type
+     */
+    enum event_type {
+
+        WAKE       = 0; /// user woke up
+        SLEEP      = 1; /// user went to sleep
+
+        DISRUPTION = 2; /// usually a sleep disruption
+
+        FOOD       = 3; /// user ate something
+        DRINK      = 4; /// user drank something
+        CAFFEINE   = 5; /// user drank caffeine
+        ALCOHOL    = 6; /// user drank alcohol
+
+        BATHROOM   = 7; /// user visited the bathroom
+        BATH       = 8; /// user had a bath or shower
+
+        RETARGET   = 9; /// user changed the target timestamp (see related_timestamp)
+
+        OTHER      = 10; /// miscellaneous (usually described in the comment)
+
+        // See "Private Fields" in ../README.md:
+        //MY_VALUE = 10000;
+
+    };
+
+    // Core properties:
+    uint64 timestamp = 1; /// Milliseconds since the Unix epoch
+    event_type event = 2;
+
+    // See "Private Fields" in ../README.md:
+    map<string,string> private_storage = 3;
+
+    // Properties for guidance:
+    /**
+     * A number related to the event.
+     *
+     * <p>If <tt>event == RETARGET</tt>, a missing or zero value indicates the target has been disabled, any other value indicates the target timestamp when the user would like to wake up in milliseconds past the Unix epoch.</p>
+     * <p>In all other cases, this field has no specific meaning.</p>
+     */
+    uint64 related = 4;
+
+    string comment = 5;
+
+    // Add properties here...
+
+    //uint64 my_public_value = (next_available_number);
+
+    // See "Private Fields" in ../README.md:
+    //uint64 my_private_value = 10000;
+
+}

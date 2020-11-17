@@ -1,0 +1,51 @@
+/**
+ * @file A complete sleep diary
+ * @author Andrew Sayers <andrew-github.com@pileofstuff.org>
+ * @copyright 2020
+ * @license MIT
+ */
+
+syntax = "proto3";
+
+import "entry_type.proto";
+
+message diary_type {
+
+    // Core properties:
+    repeated entry_type entries = 1;
+
+    // See "Private Fields" in ../README.md:
+    map<string,string> private_storage = 2;
+
+    
+    /*
+     * Settings
+     */
+
+    /**
+     * User's ideal day length in milliseconds
+     */
+    uint64 preferred_day_length = 3;
+
+    /**
+     * URL of the server that will receive updates
+     */
+    string server  = 4;
+    /**
+     * Number of entries that have been sent to the server
+     */
+    uint64 server_entries_sent = 5;
+    /**
+     * Number of entries in the diary before the first one sent
+     */
+    uint64 server_entries_offset = 6;
+
+
+    // Add properties here...
+
+    //uint64 my_public_value = (next_available_number);
+
+    // See "Private Fields" in ../README.md:
+    //uint64 my_private_value = 10000;
+
+}
