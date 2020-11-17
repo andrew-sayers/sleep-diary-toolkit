@@ -19,4 +19,4 @@ sleep-diary-toolkit.min.js: src/data_structures.js $(JS_FILES)
 
 index.html: README.md src/data_structures.js $(JS_FILES)
 	jsdoc -d . --readme $^
-	sed -i -e 's/<title>JSDoc: Home<\/title>/<title>Sleep Diary Toolkit<\/title>/' -e 's/<h1 class="page-title">Home<\/h1>/<h1 class="page-title">Sleep Diary Toolkit<\/h1>/' index.html
+	sed -i -e 's/<title>JSDoc: Home<\/title>/<title>Sleep Diary Toolkit<\/title>/' -e 's/<h1 class="page-title">Home<\/h1>/<h1 class="page-title">Sleep Diary Toolkit<\/h1>/' -e 's/\(<body.*>\)/\1<a href="https:\/\/github.com\/andrew-sayers\/sleep-diary-toolkit"><img loading="lazy" width="149" height="149" src="https:\/\/github.blog\/wp-content\/uploads\/2008\/12\/forkme_right_red_aa0000.png?resize=149%2C149" style="position:fixed;top:0;right:0" alt="Fork me on GitHub" data-recalc-dims="1"><\/a>/' index.html
