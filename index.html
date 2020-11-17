@@ -1,1 +1,454 @@
-test
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Sleep Diary Toolkit</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Sleep Diary Toolkit</h1>
+
+    
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>Sleep Diary Toolkit</h1>
+<p>This is an early alpha release of a library to create applications that manage a sleep diary.  Depending on where you are viewing this, you may be able to see some example applications:</p>
+<ul>
+<li><a href="../sleep-diary-logger/">Sleep Diary Logger</a> - a simple sleep/wake logger</li>
+<li><a href="../sleep-diary-menu/">Sleep Diary Menu</a> - a menu system for viewing and configuring a diary</li>
+</ul>
+<p>There are also some example applications in <a href="examples/">the examples folder</a>.</p>
+<p>By default, this toolkit only stores your diary in your browser, so your data will be removed whenever you clear site data.  Your data will also be not be available in other browsers, on other sites, or in web pages hosted on your local filesystem.  You can transfer data around with the <em>backup</em> and <em>restore</em> functions in the menu system, and you can notify a server about updates with the <em>online backup</em> feature.</p>
+<p>Most browsers require you to allow cookies in order for this site to work.  This site actually uses <a href="https://en.wikipedia.org/wiki/Web_storage">web storage</a>, which is a more private alternative to cookies.</p>
+<h1>Getting Started</h1>
+<h2>Production use (in a browser)</h2>
+<p>This library is available as a single file for production use.</p>
+<pre><code>&lt;script src=&quot;.../sleep-diary-toolkit.js&quot;&gt;
+&lt;script&gt;
+  console.log(new Diary());
+  console.log(browser_utils)
+&lt;/script&gt;
+</code></pre>
+<h2>Production use (in node.js)</h2>
+<p>This library requires <code>protobufjs</code>.</p>
+<pre><code>npm install -g protobufjs
+node -e 'console.log(require(&quot;./src/diary.js&quot;))'
+</code></pre>
+<h2>Accessing data in other languages</h2>
+<p>When you create a backup file or configure an online backup, the toolkit encodes the data using <a href="https://developers.google.com/protocol-buffers">protocol buffers</a>.  You can load that data in any language that supports protocol buffers.  Here are the steps to decode the data:</p>
+<ol>
+<li>decide which type of data is represented
+<ul>
+<li><code>diary_type</code> objects usually begin with <code>Diary(&quot;</code> and end with <code>&quot;)</code></li>
+<li>online backup requests are always <code>diary_update_type</code> objects</li>
+<li><code>entry_type</code> objects are only sent as part of another object</li>
+</ul>
+</li>
+<li>if the data was wrapped in <code>Diary(&quot;...&quot;)</code>, remove the wrapping</li>
+<li><a href="https://en.wikipedia.org/wiki/Base64">base64</a>-decode the data</li>
+<li>pass the decoded data to your library</li>
+</ol>
+<h1>Developing the toolkit itself</h1>
+<p>If you want to modify the library, it can be useful to test your changes in a browser before recompiling.</p>
+<pre><code>&lt;script src=&quot;https://cdn.rawgit.com/dcodeIO/protobuf.js/v6.10.1/dist/minimal/protobuf.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;src/data_structures.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;src/browser_utils.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;src/diary.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+  console.log(new Diary());
+  console.log(browser_utils)
+&lt;/script&gt;
+</code></pre>
+<p>It is recommended to build the toolkit with <a href="https://www.docker.com/">Docker</a> or a compatible equivalent.  Once you have installed Docker, run the following commands:</p>
+<pre><code># Go to the directory this file is in:
+cd .../sleep-diary-toolkit
+
+# First time only: create the build envirnoment:
+docker build -t sleep-diary-toolkit .
+
+# Build the project:
+docker run --rm -v &quot;$PWD&quot;:/sleep-diary-toolkit sleep-diary-toolkit
+</code></pre>
+<p>This will create a build environment that runs the <a href="Makefile">Makefile</a> in a repeatable way.  The Makefile might run on your system without Docker, but is likely to produce different results.</p>
+<h1>Data Structures</h1>
+<h2>Private Fields</h2>
+<p>You are welcome to extend this format locally, but you need to manage the risk that the public protocol is later updated in a way that's incompatible with your changes.  Here are some recommended solutions.</p>
+<p>Use the &quot;private storage&quot; field as a key/value store for things you don't expect to ever publicly release.  Here is a simple Javascript example:</p>
+<pre><code>diary.data.privateStorage.my_key = &quot;my value&quot;;
+diary.save();
+</code></pre>
+<p>The public version of this file will never put any specific requirements on this field, so you can safely use it however you like.</p>
+<p>If you are developing something that might go public in the future, assign your field a value between <code>10000</code> and <code>11000</code>.  The public version of this file will never include a field with a value in that range.  If and when your change goes public, it will be assigned a new field number in the normal range.</p></article>
+    </section>
+
+
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>browser_utils.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Miscellaneous browser utilities</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li><a href="mailto:andrew-github.com@pileofstuff.org">Andrew Sayers</a></li>
+        </ul>
+    </dd>
+    
+
+    
+    <dt class="tag-copyright">Copyright:</dt>
+    <dd class="tag-copyright"><ul class="dummy"><li>2020</li></ul></dd>
+    
+
+    
+    <dt class="tag-license">License:</dt>
+    <dd class="tag-license"><ul class="dummy"><li>MIT</li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="browser_utils.js.html">browser_utils.js</a>, <a href="browser_utils.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>data_structures.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Data structures from protocol buffers</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li><a href="mailto:andrew-github.com@pileofstuff.org">Andrew Sayers</a></li>
+        </ul>
+    </dd>
+    
+
+    
+    <dt class="tag-copyright">Copyright:</dt>
+    <dd class="tag-copyright"><ul class="dummy"><li>2020</li></ul></dd>
+    
+
+    
+    <dt class="tag-license">License:</dt>
+    <dd class="tag-license"><ul class="dummy"><li>MIT</li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="data_structures.js.html">data_structures.js</a>, <a href="data_structures.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>diary.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description">Manipulate sleep diaries</div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li><a href="mailto:andrew-github.com@pileofstuff.org">Andrew Sayers</a></li>
+        </ul>
+    </dd>
+    
+
+    
+    <dt class="tag-copyright">Copyright:</dt>
+    <dd class="tag-copyright"><ul class="dummy"><li>2020</li></ul></dd>
+    
+
+    
+    <dt class="tag-license">License:</dt>
+    <dd class="tag-license"><ul class="dummy"><li>MIT</li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="browser_utils.html">browser_utils</a></li></ul><h3>Classes</h3><ul><li><a href="diary_type.html">diary_type</a></li><li><a href="diary_update_type.html">diary_update_type</a></li><li><a href="entry_type.html">entry_type</a></li></ul><h3>Interfaces</h3><ul><li><a href="Idiary_type.html">Idiary_type</a></li><li><a href="Idiary_update_type.html">Idiary_update_type</a></li><li><a href="Ientry_type.html">Ientry_type</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Tue Nov 17 2020 09:41:00 GMT+0000 (Coordinated Universal Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
