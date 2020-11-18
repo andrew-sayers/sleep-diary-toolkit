@@ -111,6 +111,7 @@ function encode( type, data ) {
 
 /**
  * Load sleep diary data from a string or from localStorage
+ * @global
  * @class
  * @classdesc A user's sleep diary
  *
@@ -169,18 +170,9 @@ function Diary(data) {
     if ( typeof data == 'string' || data instanceof String ) {
 
         // unwrap the Diary(""), if present:
-        data = data.replace(/^Diary\("(.*)"\)/,"$1");
+        data = data.replace(/^Diary\(["'](.*)["']\)/,"$1");
 
-        try {
-
-            this.data = data_structures.diary_type.decode(base64_decode(data));
-
-        } catch (e) {
-
-            this.data = null;
-            console.error("Could not load diary - file may have been corrupted",e);
-
-        }
+        this.data = data_structures.diary_type.decode(base64_decode(data));
 
     } else {
 
@@ -275,9 +267,8 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
                     req = new XMLHttpRequest(),
                     new_server_entries_sent = this.data.server_entries.length,
                     to_send = encode(data_structures.diary_update_type,{
-                        entries : this.data.entries.slice(this.data.serverEntriesSent),
-                        start   : this.data.serverEntriesSent - this.data.serverEntriesOffset,
-                        end     : new_server_entries_sent - this.data.serverEntriesOffset,
+                        entries: this.data.entries.slice(this.data.serverEntriesSent),
+                        start  : this.data.serverEntriesSent - this.data.serverEntriesOffset,
                     })
                 ;
 
@@ -480,8 +471,8 @@ Diary.prototype.add_entry = function(event,timestamp,related,comment) {
  * Each value in the list of entries should be either an entry object,
  * or a list of argument similar to those passed to add_entry()
  *
- * @param {number} start - zero-based index at which to start inserting entries
- * @param {number} end - zero-based index before which to end inserting entries
+ * @param {number} start - zero-based index at which to start
+ * @param {number} delete_count - number of entries to remove
  * @param {Array[]} entries - entries to insert
  * @param {function=} success_callback - called when the splice is complete
  * @param {function=} error_callback - called if the splice fails
@@ -491,7 +482,7 @@ Diary.prototype.add_entry = function(event,timestamp,related,comment) {
  * @example
  *     diary.splice_entries(10,1,[['WAKE']]); // replace an existing entry
  */
-Diary.prototype.splice_entries = function( start, end, entries, success_callback, error_callback) {
+Diary.prototype.splice_entries = function( start, delete_count, entries, success_callback, error_callback) {
 
     if ( entries ) {
         for ( var n=0; n!=entries.length; ++n ) {
@@ -506,9 +497,9 @@ Diary.prototype.splice_entries = function( start, end, entries, success_callback
         var that = this,
             send_offset = Math.max( 0, this.data.serverEntriesOffset - start ),
             to_send = encode(data_structures.diary_update_type,{
-                entries : entries,
-                start   : start - this.data.serverEntriesOffset + send_offset,
-                end     : Math.max( 0, end - this.data.serverEntriesOffset + send_offset ),
+                entries     : entries,
+                start       : start - this.data.serverEntriesOffset + send_offset,
+                delete_count: Math.max( 0, delete_count - send_offset ),
             }),
             req = new XMLHttpRequest()
         ;
@@ -516,9 +507,9 @@ Diary.prototype.splice_entries = function( start, end, entries, success_callback
         req.onload = function(e) {
             that.data.entries.splice.apply(
                 that.data.entries,
-                [ start, end ].concat(entries)
+                [ start, delete_count ].concat(entries)
             );
-            if ( that.data.serverEntriesSent &lt; end ) that.data.serverEntriesSent = end;
+            if ( that.data.serverEntriesSent &lt; start+delete_count ) that.data.serverEntriesSent = start+delete_count;
             that.save();
             if ( success_callback ) success_callback();
         };
@@ -530,8 +521,9 @@ Diary.prototype.splice_entries = function( start, end, entries, success_callback
 
         this.data.entries.splice.apply(
             this.data.entries,
-            [ start, end ].concat(entries)
+            [ start, delete_count ].concat(entries)
         );
+        console.log(this.data.entries);
         this.save();
         if ( success_callback ) success_callback();
 
@@ -810,12 +802,10 @@ Diary.prototype.update = function(data) {
     if ( update.reset ) {
         this.data.entries.splice( 0, this.data.entries.length );
     }
-    if ( update.entries ) {
-        this.data.entries.splice.apply(
-            this.data.entries,
-            [ update.start, update.end ].concat(update.entries)
-        );
-    }
+    this.data.entries.splice.apply(
+        this.data.entries,
+        [ update.start, update.delete_count ].concat(update.entries||[])
+    );
 }
 
 if (typeof module !== 'undefined' &amp;&amp; module.exports) {
@@ -836,13 +826,13 @@ try { window.Diary = Diary } catch (e) {};
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="browser_utils.html">browser_utils</a></li></ul><h3>Classes</h3><ul><li><a href="diary_type.html">diary_type</a></li><li><a href="diary_update_type.html">diary_update_type</a></li><li><a href="entry_type.html">entry_type</a></li></ul><h3>Interfaces</h3><ul><li><a href="Idiary_type.html">Idiary_type</a></li><li><a href="Idiary_update_type.html">Idiary_update_type</a></li><li><a href="Ientry_type.html">Ientry_type</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Namespaces</h3><ul><li><a href="browser_utils.html">browser_utils</a></li></ul><h3>Classes</h3><ul><li><a href="Diary.html">Diary</a></li><li><a href="diary_type.html">diary_type</a></li><li><a href="diary_update_type.html">diary_update_type</a></li><li><a href="entry_type.html">entry_type</a></li></ul><h3>Interfaces</h3><ul><li><a href="Idiary_type.html">Idiary_type</a></li><li><a href="Idiary_update_type.html">Idiary_update_type</a></li><li><a href="Ientry_type.html">Ientry_type</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Tue Nov 17 2020 10:04:56 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Nov 18 2020 10:28:07 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
