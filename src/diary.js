@@ -239,9 +239,8 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
                     req = new XMLHttpRequest(),
                     new_server_entries_sent = this.data.server_entries.length,
                     to_send = encode(data_structures.diary_update_type,{
-                        entries : this.data.entries.slice(this.data.serverEntriesSent),
-                        start   : this.data.serverEntriesSent - this.data.serverEntriesOffset,
-                        end     : new_server_entries_sent - this.data.serverEntriesOffset,
+                        entries: this.data.entries.slice(this.data.serverEntriesSent),
+                        start  : this.data.serverEntriesSent - this.data.serverEntriesOffset,
                     })
                 ;
 
@@ -444,8 +443,8 @@ Diary.prototype.add_entry = function(event,timestamp,related,comment) {
  * Each value in the list of entries should be either an entry object,
  * or a list of argument similar to those passed to add_entry()
  *
- * @param {number} start - zero-based index at which to start inserting entries
- * @param {number} end - zero-based index before which to end inserting entries
+ * @param {number} start - zero-based index at which to start
+ * @param {number} delete_count - number of entries to remove
  * @param {Array[]} entries - entries to insert
  * @param {function=} success_callback - called when the splice is complete
  * @param {function=} error_callback - called if the splice fails
@@ -455,7 +454,7 @@ Diary.prototype.add_entry = function(event,timestamp,related,comment) {
  * @example
  *     diary.splice_entries(10,1,[['WAKE']]); // replace an existing entry
  */
-Diary.prototype.splice_entries = function( start, end, entries, success_callback, error_callback) {
+Diary.prototype.splice_entries = function( start, delete_count, entries, success_callback, error_callback) {
 
     if ( entries ) {
         for ( var n=0; n!=entries.length; ++n ) {
@@ -470,9 +469,9 @@ Diary.prototype.splice_entries = function( start, end, entries, success_callback
         var that = this,
             send_offset = Math.max( 0, this.data.serverEntriesOffset - start ),
             to_send = encode(data_structures.diary_update_type,{
-                entries : entries,
-                start   : start - this.data.serverEntriesOffset + send_offset,
-                end     : Math.max( 0, end - this.data.serverEntriesOffset + send_offset ),
+                entries     : entries,
+                start       : start - this.data.serverEntriesOffset + send_offset,
+                delete_count: Math.max( 0, delete_count - send_offset ),
             }),
             req = new XMLHttpRequest()
         ;
@@ -480,9 +479,9 @@ Diary.prototype.splice_entries = function( start, end, entries, success_callback
         req.onload = function(e) {
             that.data.entries.splice.apply(
                 that.data.entries,
-                [ start, end ].concat(entries)
+                [ start, delete_count ].concat(entries)
             );
-            if ( that.data.serverEntriesSent < end ) that.data.serverEntriesSent = end;
+            if ( that.data.serverEntriesSent < start+delete_count ) that.data.serverEntriesSent = start+delete_count;
             that.save();
             if ( success_callback ) success_callback();
         };
@@ -494,8 +493,9 @@ Diary.prototype.splice_entries = function( start, end, entries, success_callback
 
         this.data.entries.splice.apply(
             this.data.entries,
-            [ start, end ].concat(entries)
+            [ start, delete_count ].concat(entries)
         );
+        console.log(this.data.entries);
         this.save();
         if ( success_callback ) success_callback();
 
@@ -774,12 +774,10 @@ Diary.prototype.update = function(data) {
     if ( update.reset ) {
         this.data.entries.splice( 0, this.data.entries.length );
     }
-    if ( update.entries ) {
-        this.data.entries.splice.apply(
-            this.data.entries,
-            [ update.start, update.end ].concat(update.entries)
-        );
-    }
+    this.data.entries.splice.apply(
+        this.data.entries,
+        [ update.start, update.delete_count ].concat(update.entries||[])
+    );
 }
 
 if (typeof module !== 'undefined' && module.exports) {

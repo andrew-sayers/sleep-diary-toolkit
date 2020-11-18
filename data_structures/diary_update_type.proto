@@ -14,8 +14,8 @@ message diary_update_type {
     // Core properties:
     repeated entry_type entries = 1;
 
-    uint64 start = 2; /// Zero-based index at which to start inserting entries
-    uint64 end   = 3; /// Zero-based index before which to end inserting entries
+    uint64 start        = 2; /// Zero-based index at which to start inserting entries
+    uint64 delete_count = 3; /// Number of entries to remove before inserting entries
 
     bool reset = 4; /// Indicates the diary should be reset (all previous items cleared)
 
