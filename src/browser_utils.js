@@ -5,6 +5,8 @@
  * @license MIT
  */
 
+"use strict";
+
 /**
  * Miscellaneous browser utilities
  * @namespace
