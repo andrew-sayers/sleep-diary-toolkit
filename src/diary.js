@@ -142,7 +142,7 @@ function Diary(data) {
     if ( typeof data == 'string' || data instanceof String ) {
 
         // unwrap the Diary(""), if present:
-        data = data.replace(/^Diary\("(.*)"\)/,"$1");
+        data = data.replace(/^Diary\(["'](.*)["']\)/,"$1");
 
         try {
 
