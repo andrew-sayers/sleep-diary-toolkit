@@ -83,6 +83,7 @@ function encode( type, data ) {
 
 /**
  * Load sleep diary data from a string or from localStorage
+ * @global
  * @class
  * @classdesc A user's sleep diary
  *
