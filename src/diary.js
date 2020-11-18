@@ -144,16 +144,7 @@ function Diary(data) {
         // unwrap the Diary(""), if present:
         data = data.replace(/^Diary\(["'](.*)["']\)/,"$1");
 
-        try {
-
-            this.data = data_structures.diary_type.decode(base64_decode(data));
-
-        } catch (e) {
-
-            this.data = null;
-            console.error("Could not load diary - file may have been corrupted",e);
-
-        }
+        this.data = data_structures.diary_type.decode(base64_decode(data));
 
     } else {
 
