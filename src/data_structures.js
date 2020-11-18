@@ -857,7 +857,7 @@ $root.diary_update_type = (function() {
      * @interface Idiary_update_type
      * @property {Array.<Ientry_type>|null} [entries] diary_update_type entries
      * @property {number|Long|null} [start] Zero-based index at which to start inserting entries
-     * @property {number|Long|null} [end] Zero-based index before which to end inserting entries
+     * @property {number|Long|null} [deleteCount] Number of entries to remove before inserting entries
      * @property {boolean|null} [reset] Indicates the diary should be reset (all previous items cleared)
      */
 
@@ -894,12 +894,12 @@ $root.diary_update_type = (function() {
     diary_update_type.prototype.start = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
 
     /**
-     * Zero-based index before which to end inserting entries
-     * @member {number|Long} end
+     * Number of entries to remove before inserting entries
+     * @member {number|Long} deleteCount
      * @memberof diary_update_type
      * @instance
      */
-    diary_update_type.prototype.end = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
+    diary_update_type.prototype.deleteCount = $util.Long ? $util.Long.fromBits(0,0,true) : 0;
 
     /**
      * Indicates the diary should be reset (all previous items cleared)
@@ -938,8 +938,8 @@ $root.diary_update_type = (function() {
                 $root.entry_type.encode(message.entries[i], writer.uint32(/* id 1, wireType 2 =*/10).fork()).ldelim();
         if (message.start != null && Object.hasOwnProperty.call(message, "start"))
             writer.uint32(/* id 2, wireType 0 =*/16).uint64(message.start);
-        if (message.end != null && Object.hasOwnProperty.call(message, "end"))
-            writer.uint32(/* id 3, wireType 0 =*/24).uint64(message.end);
+        if (message.deleteCount != null && Object.hasOwnProperty.call(message, "deleteCount"))
+            writer.uint32(/* id 3, wireType 0 =*/24).uint64(message.deleteCount);
         if (message.reset != null && Object.hasOwnProperty.call(message, "reset"))
             writer.uint32(/* id 4, wireType 0 =*/32).bool(message.reset);
         return writer;
@@ -985,7 +985,7 @@ $root.diary_update_type = (function() {
                 message.start = reader.uint64();
                 break;
             case 3:
-                message.end = reader.uint64();
+                message.deleteCount = reader.uint64();
                 break;
             case 4:
                 message.reset = reader.bool();
@@ -1037,9 +1037,9 @@ $root.diary_update_type = (function() {
         if (message.start != null && message.hasOwnProperty("start"))
             if (!$util.isInteger(message.start) && !(message.start && $util.isInteger(message.start.low) && $util.isInteger(message.start.high)))
                 return "start: integer|Long expected";
-        if (message.end != null && message.hasOwnProperty("end"))
-            if (!$util.isInteger(message.end) && !(message.end && $util.isInteger(message.end.low) && $util.isInteger(message.end.high)))
-                return "end: integer|Long expected";
+        if (message.deleteCount != null && message.hasOwnProperty("deleteCount"))
+            if (!$util.isInteger(message.deleteCount) && !(message.deleteCount && $util.isInteger(message.deleteCount.low) && $util.isInteger(message.deleteCount.high)))
+                return "deleteCount: integer|Long expected";
         if (message.reset != null && message.hasOwnProperty("reset"))
             if (typeof message.reset !== "boolean")
                 return "reset: boolean expected";
@@ -1077,15 +1077,15 @@ $root.diary_update_type = (function() {
                 message.start = object.start;
             else if (typeof object.start === "object")
                 message.start = new $util.LongBits(object.start.low >>> 0, object.start.high >>> 0).toNumber(true);
-        if (object.end != null)
+        if (object.deleteCount != null)
             if ($util.Long)
-                (message.end = $util.Long.fromValue(object.end)).unsigned = true;
-            else if (typeof object.end === "string")
-                message.end = parseInt(object.end, 10);
-            else if (typeof object.end === "number")
-                message.end = object.end;
-            else if (typeof object.end === "object")
-                message.end = new $util.LongBits(object.end.low >>> 0, object.end.high >>> 0).toNumber(true);
+                (message.deleteCount = $util.Long.fromValue(object.deleteCount)).unsigned = true;
+            else if (typeof object.deleteCount === "string")
+                message.deleteCount = parseInt(object.deleteCount, 10);
+            else if (typeof object.deleteCount === "number")
+                message.deleteCount = object.deleteCount;
+            else if (typeof object.deleteCount === "object")
+                message.deleteCount = new $util.LongBits(object.deleteCount.low >>> 0, object.deleteCount.high >>> 0).toNumber(true);
         if (object.reset != null)
             message.reset = Boolean(object.reset);
         return message;
@@ -1114,9 +1114,9 @@ $root.diary_update_type = (function() {
                 object.start = options.longs === String ? "0" : 0;
             if ($util.Long) {
                 var long = new $util.Long(0, 0, true);
-                object.end = options.longs === String ? long.toString() : options.longs === Number ? long.toNumber() : long;
+                object.deleteCount = options.longs === String ? long.toString() : options.longs === Number ? long.toNumber() : long;
             } else
-                object.end = options.longs === String ? "0" : 0;
+                object.deleteCount = options.longs === String ? "0" : 0;
             object.reset = false;
         }
         if (message.entries && message.entries.length) {
@@ -1129,11 +1129,11 @@ $root.diary_update_type = (function() {
                 object.start = options.longs === String ? String(message.start) : message.start;
             else
                 object.start = options.longs === String ? $util.Long.prototype.toString.call(message.start) : options.longs === Number ? new $util.LongBits(message.start.low >>> 0, message.start.high >>> 0).toNumber(true) : message.start;
-        if (message.end != null && message.hasOwnProperty("end"))
-            if (typeof message.end === "number")
-                object.end = options.longs === String ? String(message.end) : message.end;
+        if (message.deleteCount != null && message.hasOwnProperty("deleteCount"))
+            if (typeof message.deleteCount === "number")
+                object.deleteCount = options.longs === String ? String(message.deleteCount) : message.deleteCount;
             else
-                object.end = options.longs === String ? $util.Long.prototype.toString.call(message.end) : options.longs === Number ? new $util.LongBits(message.end.low >>> 0, message.end.high >>> 0).toNumber(true) : message.end;
+                object.deleteCount = options.longs === String ? $util.Long.prototype.toString.call(message.deleteCount) : options.longs === Number ? new $util.LongBits(message.deleteCount.low >>> 0, message.deleteCount.high >>> 0).toNumber(true) : message.deleteCount;
         if (message.reset != null && message.hasOwnProperty("reset"))
             object.reset = message.reset;
         return object;
