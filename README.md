@@ -5,8 +5,6 @@ This is an early alpha release of a library to create applications that manage a
 * [Sleep Diary Logger](../sleep-diary-logger/) - a simple sleep/wake logger
 * [Sleep Diary Menu](../sleep-diary-menu/) - a menu system for viewing and configuring a diary
 
-There are also some example applications in [the examples folder](examples/).
-
 By default, this toolkit only stores your diary in your browser, so your data will be removed whenever you clear site data.  Your data will also be not be available in other browsers, on other sites, or in web pages hosted on your local filesystem.  You can transfer data around with the _backup_ and _restore_ functions in the menu system, and you can notify a server about updates with the _online backup_ feature.
 
 Most browsers require you to allow cookies in order for this site to work.  This site actually uses [web storage](https://en.wikipedia.org/wiki/Web_storage), which is a more private alternative to cookies.
@@ -15,9 +13,9 @@ Most browsers require you to allow cookies in order for this site to work.  This
 
 ## Production use (in a browser)
 
-This library is available as a single file for production use.
+This library is available as a single file for production use.  Include [sleep-diary-toolkit.min.js](sleep-diary-toolkit.min.js) in your project directory, then do:
 
-    <script src=".../sleep-diary-toolkit.js">
+    <script src="sleep-diary-toolkit.min.js">
     <script>
       console.log(new Diary());
       console.log(browser_utils)
@@ -25,10 +23,10 @@ This library is available as a single file for production use.
 
 ## Production use (in node.js)
 
-This library requires `protobufjs`.
+This library requires `protobufjs`.  Download this repository, then do:
 
     npm install -g protobufjs
-    node -e 'console.log(require("./src/diary.js"))'
+    node -e 'console.log(require("/path/to/repository/src/diary.js"))'
 
 ## Accessing data in other languages
 
