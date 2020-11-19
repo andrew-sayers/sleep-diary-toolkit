@@ -495,7 +495,6 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
             this.data.entries,
             [ start, delete_count ].concat(entries)
         );
-        console.log(this.data.entries);
         this.save();
         if ( success_callback ) success_callback();
 
