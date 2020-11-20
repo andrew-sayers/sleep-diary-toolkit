@@ -237,7 +237,7 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
 
             if ( !this.sending++ ) {
 
-                var that = this,
+                var self = this,
                     req = new XMLHttpRequest(),
                     new_server_entries_sent = this.data.server_entries.length,
                     to_send = encode(data_structures.diary_update_type,{
@@ -248,21 +248,21 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
 
                 // save the data on the server:
                 req.onload = function(e) {
-                    that.data.serverEntriesSent = new_server_entries_sent;
-                    that.save();
-                    that.sending = 0;
+                    self.data.serverEntriesSent = new_server_entries_sent;
+                    self.save();
+                    self.sending = 0;
                     if (
-                        that.diary.server &&
-                        new_server_entries_sent < that.diary.entries.length
+                        self.diary.server &&
+                        new_server_entries_sent < self.diary.entries.length
                     ) {
                         // diary was updated while the request was in flight - send again:
-                        that.save();
+                        self.save();
                         if ( success_callback ) success_callback();
                     }
                 };
                 req.onerror = function(e) {
                     // ignore any requests sent while this request was in flight:
-                    that.sending = 0;
+                    self.sending = 0;
                     if ( error_callback ) error_callback();
                 }
                 req.open( "GET", this.data.server + to_send );
@@ -304,7 +304,7 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
 Diary.prototype.server = function( server, success_callback, error_callback ) {
     if ( server ) {
         if ( server != this.data.server ) {
-            var that = this,
+            var self = this,
                 target = this.target_timestamp(),
                 entries = target ? [
                     // make sure the server knows we have a target
@@ -322,10 +322,10 @@ Diary.prototype.server = function( server, success_callback, error_callback ) {
             ;
             // save the data on the server:
             req.onload = function(e) {
-                that.data.server = server;
-                that.data.serverEntriesSent = target?1:0;
-                that.data.serverEntriesOffset = that.data.entries.length - that.data.serverEntriesSent;
-                that.save();
+                self.data.server = server;
+                self.data.serverEntriesSent = target?1:0;
+                self.data.serverEntriesOffset = self.data.entries.length - self.data.serverEntriesSent;
+                self.save();
                 if ( success_callback ) success_callback();
             };
             if ( error_callback ) req.onerror = function() { error_callback(); }
@@ -368,7 +368,7 @@ Diary.prototype.set_preferred_day_length = function(day_length) {
  */
 Diary.prototype.send_all_entries = function( success_callback, error_callback ) {
     if ( this.data.server ) {
-        var that = this,
+        var self = this,
             to_send = encode(data_structures.diary_update_type,{
                 entries: this.data.entries,
                 reset  : true,
@@ -378,9 +378,9 @@ Diary.prototype.send_all_entries = function( success_callback, error_callback ) 
         ;
         // save the data on the server:
         req.onload = function(e) {
-            that.data.serverEntriesSent = entries_sent;
-            that.data.serverEntriesOffset = 0;
-            that.save();
+            self.data.serverEntriesSent = entries_sent;
+            self.data.serverEntriesOffset = 0;
+            self.save();
             if ( success_callback ) success_callback();
         };
         if ( error_callback ) req.onerror = function() { error_callback(); }
@@ -468,7 +468,7 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
 
     if ( this.data.server && end > this.data.serverEntriesOffset ) {
 
-        var that = this,
+        var self = this,
             send_offset = Math.max( 0, this.data.serverEntriesOffset - start ),
             to_send = encode(data_structures.diary_update_type,{
                 entries     : entries,
@@ -479,12 +479,12 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
         ;
         // save the data on the server:
         req.onload = function(e) {
-            that.data.entries.splice.apply(
-                that.data.entries,
+            self.data.entries.splice.apply(
+                self.data.entries,
                 [ start, delete_count ].concat(entries)
             );
-            if ( that.data.serverEntriesSent < start+delete_count ) that.data.serverEntriesSent = start+delete_count;
-            that.save();
+            if ( self.data.serverEntriesSent < start+delete_count ) self.data.serverEntriesSent = start+delete_count;
+            self.save();
             if ( success_callback ) success_callback();
         };
         if ( error_callback ) req.onerror = function() { error_callback(); }
@@ -593,7 +593,7 @@ Diary.prototype.analyse = function() {
     }
 
     var one_hour = 60*60*1000, // constant value added for readability
-        that = this,
+        self = this,
 
         // ignore duplicate entries:
         ignore_repeat_events_within_this_duration = 30*60*1000,
@@ -603,7 +603,7 @@ Diary.prototype.analyse = function() {
     ;
 
     this.data.entries.forEach(function(entry) {
-        if ( entry.event == that.event_string_to_id.RETARGET ) {
+        if ( entry.event == self.event_string_to_id.RETARGET ) {
             target_timestamp = entry.related;
         } else if (
             entry.timestamp != dupe_timestamp &&
@@ -617,7 +617,7 @@ Diary.prototype.analyse = function() {
 
             switch ( entry.event ) {
 
-            case that.event_string_to_id.WAKE:
+            case self.event_string_to_id.WAKE:
                 // add a new sleep if the day would otherwise be absurdly long:
                 if ( sleep.wake_time ) {
                     push = sleep.wake_time+one_hour < entry.timestamp;
@@ -630,7 +630,7 @@ Diary.prototype.analyse = function() {
                 sleep.wake_time = entry.timestamp;
                 break;
 
-            case that.event_string_to_id.SLEEP:
+            case self.event_string_to_id.SLEEP:
                 // add a new sleep if the day would otherwise be absurdly long:
                 if ( sleep.sleep_time ) {
                     push = sleep.wake_time+(1*one_hour) < entry.timestamp;
