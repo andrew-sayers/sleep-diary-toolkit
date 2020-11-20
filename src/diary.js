@@ -342,17 +342,6 @@ Diary.prototype.server = function( server, success_callback, error_callback ) {
 }
 
 /**
- * Set the diary's preferred day length
- *
- * @param {number} day_length - preferred day length
- */
-Diary.prototype.set_preferred_day_length = function(day_length) {
-    this.data.preferredDayLength = day_length;
-    this.save();
-}
-
-
-/**
  * Send all diary entries to the server
  *
  * <p>Will call <tt>error_callback()</tt> if the request fails.</p>
@@ -502,6 +491,16 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
 
     }
 
+}
+
+/**
+ * Set the diary's preferred day length
+ *
+ * @param {number} day_length - preferred day length
+ */
+Diary.prototype.set_preferred_day_length = function(day_length) {
+    this.data.preferredDayLength = day_length;
+    this.save();
 }
 
 
