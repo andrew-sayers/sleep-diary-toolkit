@@ -203,7 +203,7 @@ Diary.prototype.serialise = function() {
 /**
  * Save a diary object to localStorage
  *
- * <p><tt>save_if_string</tt> enables saving of diaries constructed from strings.</p>
+ * <p><tt>save_if_string</tt> resets the internal "constructed_from_string" flag, allowing this diary to be saved.</p>
  *
  * <p>During development, it is often useful to load example data from a string,
  * and test your save functionality without actually overwriting real data.
@@ -225,6 +225,8 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
         if ( error_callback ) error_callback();
 
     } else {
+
+        this.constructed_from_string = false;
 
         localStorage.setItem( 'diary:data', this.serialise() );
 
