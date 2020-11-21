@@ -40,6 +40,16 @@ When you create a backup file or configure an online backup, the toolkit encodes
 3. [base64](https://en.wikipedia.org/wiki/Base64)-decode the data
 4. pass the decoded data to your library
 
+# Sending updates to a server
+
+As well as saving data in your browser, the toolkit can send regular updates to a server.  This server will know when you wake up and go to sleep, so you should only use this with a server you trust.
+
+Developers can set the server with the [server() function in diary.js](src/diary.js).  Or you can use the <em>online backup</em> option in the [Sleep Diary Menu](../sleep-diary-menu/) app.
+
+Once configured, the toolkit will send GET requests to the specified URL.  The requests will have base-64 encoded [diary update protocol buffers](data_structures/diary_update_type.proto) appended to the URL.  If the browser can't connect to the server, or the server responds with a code <tt>500</tt> or higher, the toolkit will send the information again later.
+
+Traditionally, servers handle this type of request by passing the data directly to a program.  But the toolkit doesn't differentiate between a CGI script returning a <tt>200 OK</tt> response and a server sending a <tt>404 Not Found</tt> response.  So you might prefer to simply point the toolkit at an unconfigured URL, then occasionally run a program to extract those requests from the server's access log.  See the [the access log reader example](examples/access-log-reader/).
+
 # Developing the toolkit itself
 
 If you want to modify the library, it can be useful to test your changes in a browser before recompiling.

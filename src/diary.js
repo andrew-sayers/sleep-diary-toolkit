@@ -101,13 +101,14 @@ function Diary(data) {
      * @member {boolean}
      * @private
      */
-    this.constructed_from_string = !!data;
+    this.constructed_from_string = data !== undefined;
+
     /**
-     * Number of requests recently sent to the server
+     * Queue of functions waiting to be sent to the server
      * @member {number}
      * @private
      */
-    this.sending = 0;
+    this.server_queue = [];
 
     if ( data === undefined ) {
 
@@ -142,7 +143,7 @@ function Diary(data) {
     if ( typeof data == 'string' || data instanceof String ) {
 
         // unwrap the Diary(""), if present:
-        data = data.replace(/^Diary\(["'](.*)["']\)/,"$1");
+        data = data.replace(/\n+$/,'').replace(/^Diary\(["'](.*)["']\)/,"$1");
 
         this.data = data_structures.diary_type.decode(base64_decode(data));
 
@@ -152,6 +153,19 @@ function Diary(data) {
 
     }
 
+}
+
+Diary.prototype._push_server_queue = function(callback) {
+    this.server_queue.push(callback);
+    if ( this.server_queue.length == 1 ) {
+        callback.call(this);
+    }
+}
+Diary.prototype._pop_server_queue = function() {
+    this.server_queue.shift();
+    if ( this.server_queue.length ) {
+        this.server_queue[0].call(this);
+    }
 }
 
 /**
@@ -230,52 +244,56 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
 
         localStorage.setItem( 'diary:data', this.serialise() );
 
-        if (
-            this.data.server &&
-            this.data.serverEntriesSent < this.data.entries.length
-        ) {
+        if ( this.data.server ) {
+            this._push_server_queue(function() {
 
-            if ( !this.sending++ ) {
+                if ( this.data.serverEntriesSent < this.data.entries.length ) {
 
-                var self = this,
-                    req = new XMLHttpRequest(),
-                    new_server_entries_sent = this.data.server_entries.length,
-                    to_send = encode(data_structures.diary_update_type,{
-                        entries: this.data.entries.slice(this.data.serverEntriesSent),
-                        start  : this.data.serverEntriesSent - this.data.serverEntriesOffset,
-                    })
-                ;
+                    var self = this,
+                        req = new XMLHttpRequest(),
+                        length = this.data.entries.length - this.data.serverEntriesSent,
+                        url
+                    ;
 
-                // save the data on the server:
-                req.onload = function(e) {
-                    self.data.serverEntriesSent = new_server_entries_sent;
-                    self.save();
-                    self.sending = 0;
-                    if (
-                        self.diary.server &&
-                        new_server_entries_sent < self.diary.entries.length
-                    ) {
-                        // diary was updated while the request was in flight - send again:
-                        self.save();
-                        if ( success_callback ) success_callback();
+                    for (;;) { // construct a URL short enough that all servers will accept it
+                        url = this.data.server + encode(data_structures.diary_update_type,{
+                            entries: this.data.entries.slice(self.data.serverEntriesSent,self.data.serverEntriesSent+length),
+                            start  : self.data.serverEntriesSent - this.data.serverEntriesOffset,
+                        });
+                        if ( length == 1 || url.length <= 2048 ) break;
+                        length = Math.ceil(length/2);
                     }
-                };
-                req.onerror = function(e) {
-                    // ignore any requests sent while this request was in flight:
-                    self.sending = 0;
-                    if ( error_callback ) error_callback();
+
+                    // save the data on the server:
+                    req.onload = function(e) {
+                        if ( req.status < 500 ) {
+                            self.data.serverEntriesSent += length;
+                            self._pop_server_queue();
+                            self.save(save_if_string,success_callback,error_callback);
+                        } else {
+                            self._pop_server_queue();
+                            if ( error_callback ) error_callback();
+                        }
+                    };
+                    req.onerror = function(e) {
+                        // ignore any requests sent while this request was in flight:
+                        self._pop_server_queue();
+                        if ( error_callback ) error_callback();
+                    }
+                    req.open( "GET", url );
+                    req.send();
+
+                } else {
+
+                    this._pop_server_queue();
+
                 }
-                req.open( "GET", this.data.server + to_send );
-                req.send();
 
-            } else {
+            });
 
-                if ( success_callback ) success_callback();
+        } else if ( success_callback ) {
 
-            }
-        } else {
-
-            if ( success_callback ) success_callback();
+            success_callback();
 
         }
 
@@ -284,13 +302,31 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
 }
 
 /**
- * Set the server that receives updates
+ * Update the diary with the specified events
+ *
+ * @param {string} update - serialised update object
+ */
+Diary.prototype.update = function(data) {
+    var update = data_structures.diary_update_type.decode(base64_decode(data));
+    if ( update.reset ) {
+        this.data.entries.splice( 0, this.data.entries.length );
+    }
+    this.data.entries.splice.apply(
+        this.data.entries,
+        [ update.start, update.delete_count ].concat(update.entries||[])
+    );
+}
+
+
+/**
+ * Get/set the server that receives updates
  *
  * <p>Will call <tt>error_callback()</tt> if we need to notify the server but the request fails.</p>
  *
  * @param {string=} server - URL of the server (empty or missing to disable the server)
  * @param {function=} success_callback - called when the update is complete
  * @param {function=} error_callback - called if the update fails
+ * @return {string=} server that will receive updates
  *
  * @example
  *     diary.server(
@@ -301,82 +337,62 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
  * @example
  *     diary.server(null); // stop sending updates to a server
  */
-Diary.prototype.server = function( server, success_callback, error_callback ) {
-    if ( server ) {
-        if ( server != this.data.server ) {
-            var self = this,
-                target = this.target_timestamp(),
-                entries = target ? [
-                    // make sure the server knows we have a target
-                    data_structures.entry_type.create({
-                        timestamp: new Date().getTime(),
-                        event: this.event_string_to_id.RETARGET,
-                        related: target,
-                    })
-                ] : undefined,
-                to_send = encode(data_structures.diary_update_type,{
-                    reset: true,
-                    entries: entries,
-                }),
-                req = new XMLHttpRequest()
-            ;
-            // save the data on the server:
-            req.onload = function(e) {
-                self.data.server = server;
-                self.data.serverEntriesSent = target?1:0;
-                self.data.serverEntriesOffset = self.data.entries.length - self.data.serverEntriesSent;
-                self.save();
-                if ( success_callback ) success_callback();
-            };
-            if ( error_callback ) req.onerror = function() { error_callback(); }
-            req.open( "GET", server + to_send );
-            req.send();
-        }
-    } else {
+Diary.prototype.server = function( server, send_all_entries, success_callback, error_callback ) {
+    if ( server === '' ) {
         delete this.data.server;
         this.data.serverEntriesSent = 0;
         this.data.serverEntriesOffset = 0;
-        this.save();
-        if ( success_callback ) success_callback();
+        this.save(false,success_callback,error_callback);
+    } else if ( server !== undefined ) {
+        if ( server == this.data.server && ( !send_all_entries || this.data.serverEntriesOffset == 0 ) ) {
+            if ( success_callback ) success_callback();
+        } else {
+            this._push_server_queue(function() {
+                var self = this,
+                    target = this.target_timestamp(),
+                    entries = ( target && !send_all_entries ) ? [
+                        // make sure the server knows we have a target
+                        data_structures.entry_type.create({
+                            timestamp: new Date().getTime(),
+                            event: this.event_string_to_id.RETARGET,
+                            related: target,
+                        })
+                    ] : undefined,
+                    to_send = encode(data_structures.diary_update_type,{
+                        reset: true,
+                        entries: entries,
+                    }),
+                    req = new XMLHttpRequest()
+                ;
+                // save the data on the server:
+                req.onload = function(e) {
+                    if ( req.status < 500 ) {
+                        self.data.server = server;
+                        if ( send_all_entries ) {
+                            self.data.serverEntriesSent = self.data.serverEntriesOffset = 0;
+                        } else {
+                            self.data.serverEntriesSent = self.data.entries.length;
+                            self.data.serverEntriesOffset = self.data.entries.length - (target?1:0);
+                        }
+                        self._pop_server_queue();
+                        self.save(false,success_callback,error_callback);
+                    } else {
+                        self._pop_server_queue();
+                        if ( error_callback ) error_callback();
+                    }
+                };
+                req.onerror = function() {
+                    self._pop_server_queue();
+                    if ( error_callback ) error_callback();
+                }
+                req.open( "GET", server + to_send );
+                req.send();
+            });
+        }
     }
+    return this.data.server;
 }
 
-/**
- * Send all diary entries to the server
- *
- * <p>Will call <tt>error_callback()</tt> if the request fails.</p>
- *
- * @param {function=} success_callback - called when the update is complete
- * @param {function=} error_callback - called if the update fails
- *
- * @example
- *     diary.send_all_entries(
- *       () => console.log("server activated");
- *       () => console.log("could not connect to server");
- *     );
- */
-Diary.prototype.send_all_entries = function( success_callback, error_callback ) {
-    if ( this.data.server ) {
-        var self = this,
-            to_send = encode(data_structures.diary_update_type,{
-                entries: this.data.entries,
-                reset  : true,
-            }),
-            entries_sent = this.data.entries.length,
-            req = new XMLHttpRequest()
-        ;
-        // save the data on the server:
-        req.onload = function(e) {
-            self.data.serverEntriesSent = entries_sent;
-            self.data.serverEntriesOffset = 0;
-            self.save();
-            if ( success_callback ) success_callback();
-        };
-        if ( error_callback ) req.onerror = function() { error_callback(); }
-        req.open( "GET", this.data.server + to_send );
-        req.send();
-    }
-}
 
 function create_entry(event,timestamp,related,comment) {
 
@@ -415,16 +431,18 @@ function create_entry(event,timestamp,related,comment) {
  * @param {number=} timestamp - time in milliseconds past the epoch
  * @param {number=} related - e.g. the target timestamp for RETARGETED
  * @param {string=} comment - text comment
+ * @param {function=} success_callback - called when the update is complete
+ * @param {function=} error_callback - called if the update fails
  *
  * @example
- *     diary.add_entry("wake"); // returns the time of the event
- * @example
- *     diary.add_entry(0,new Date().getTime(),my_related);
+ *     // these two do the same thing:
+ *     diary.add_entry("wake");
+ *     diary.add_entry(0,new Date().getTime());
  */
-Diary.prototype.add_entry = function(event,timestamp,related,comment) {
+Diary.prototype.add_entry = function(event,timestamp,related,comment,success_callback,error_callback) {
 
     this.data.entries.push(create_entry(event,timestamp,related,comment));
-    this.save();
+    this.save(false,success_callback,error_callback);
 
 }
 
@@ -432,7 +450,7 @@ Diary.prototype.add_entry = function(event,timestamp,related,comment) {
  * Splice the list of entries
  *
  * Each value in the list of entries should be either an entry object,
- * or a list of argument similar to those passed to add_entry()
+ * or a list of arguments similar to those passed to add_entry()
  *
  * @param {number} start - zero-based index at which to start
  * @param {number} delete_count - number of entries to remove
@@ -455,30 +473,42 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
         entries = [];
     }
 
-    if ( this.data.server && end > this.data.serverEntriesOffset ) {
+    if ( this.data.server && start+delete_count > this.data.serverEntriesOffset ) {
 
-        var self = this,
-            send_offset = Math.max( 0, this.data.serverEntriesOffset - start ),
-            to_send = encode(data_structures.diary_update_type,{
-                entries     : entries,
-                start       : start - this.data.serverEntriesOffset + send_offset,
-                delete_count: Math.max( 0, delete_count - send_offset ),
-            }),
-            req = new XMLHttpRequest()
-        ;
-        // save the data on the server:
-        req.onload = function(e) {
-            self.data.entries.splice.apply(
-                self.data.entries,
-                [ start, delete_count ].concat(entries)
-            );
-            if ( self.data.serverEntriesSent < start+delete_count ) self.data.serverEntriesSent = start+delete_count;
-            self.save();
-            if ( success_callback ) success_callback();
-        };
-        if ( error_callback ) req.onerror = function() { error_callback(); }
-        req.open( "GET", this.data.server + to_send );
-        req.send();
+        this._push_server_queue(function() {
+
+            var self = this,
+                send_offset = Math.max( 0, this.data.serverEntriesOffset - start ),
+                to_send = encode(data_structures.diary_update_type,{
+                    entries     : entries,
+                    start       : start - this.data.serverEntriesOffset + send_offset,
+                    delete_count: Math.max( 0, delete_count - send_offset ),
+                }),
+                req = new XMLHttpRequest()
+            ;
+            // save the data on the server:
+            req.onload = function(e) {
+                if ( req.status < 500 ) {
+                    self.data.entries.splice.apply(
+                        self.data.entries,
+                        [ start, delete_count ].concat(entries)
+                    );
+                    if ( self.data.serverEntriesSent < start+delete_count ) self.data.serverEntriesSent = start+delete_count;
+                    self._pop_server_queue();
+                    self.save(false,success_callback,error_callback);
+                } else {
+                    self._pop_server_queue();
+                    if ( error_callback ) error_callback();
+                }
+            };
+            req.onerror = function() {
+                self._pop_server_queue();
+                if ( error_callback ) error_callback();
+            };
+            req.open( "GET", this.data.server + to_send );
+            req.send();
+
+        });
 
     } else {
 
@@ -486,8 +516,7 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
             this.data.entries,
             [ start, delete_count ].concat(entries)
         );
-        this.save();
-        if ( success_callback ) success_callback();
+        this.save(false,success_callback,error_callback);
 
     }
 
@@ -762,22 +791,6 @@ Diary.prototype.mode = function() {
         if ( this.data.entries[n].event < 2 ) return this.data.entries[n].event;
     }
     return NaN;
-}
-
-/**
- * Update the diary with the specified events
- *
- * @param {string} update - serialised update object
- */
-Diary.prototype.update = function(data) {
-    var update = data_structures.diary_update_type.decode(base64_decode(data));
-    if ( update.reset ) {
-        this.data.entries.splice( 0, this.data.entries.length );
-    }
-    this.data.entries.splice.apply(
-        this.data.entries,
-        [ update.start, update.delete_count ].concat(update.entries||[])
-    );
 }
 
 if (typeof module !== 'undefined' && module.exports) {
