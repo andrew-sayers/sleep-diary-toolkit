@@ -81,6 +81,11 @@ function encode( type, data ) {
     return base64_encode(type.encode(data).finish());
 }
 
+
+/*
+ * CONSTRUCT, CREATE AND LOAD DIARY OBJECTS
+ */
+
 /**
  * Load sleep diary data from a string or from localStorage
  * @global
@@ -124,13 +129,15 @@ function Diary(data) {
             /**
              * Actual diary data
              *
-             * Do not modify entries directly.  Use the diary functions provided.
-             * The diary functions save the data and notify any server the user has requested.
+             * Do not access entries directly.  Use the diary functions provided.
              *
              * @member {diary_type}
-             * @public
-             * @readonly
+             * @private
              *
+             * @see server
+             * @see preferred_day_length
+             * @see entries
+             * @see private_storage
              * @see add_entry
              * @see splice_entries
              */
@@ -318,6 +325,10 @@ Diary.prototype.update = function(data) {
 }
 
 
+/*
+ * LOW-LEVEL MEMBER FUNCTIONS
+ */
+
 /**
  * Get/set the server that receives updates
  *
@@ -393,6 +404,98 @@ Diary.prototype.server = function( server, send_all_entries, success_callback, e
     return this.data.server;
 }
 
+/**
+ * Get the list of entries
+ *
+ * If you want to replace the list of entries altogether, use other
+ * functions that more clearly communicate what information you want
+ * to send to the server.
+ *
+ * @see splice_entries
+ * @see server
+ *
+ * @readonly
+ *
+ * @return {Array.<Ientry_type>} entries
+ */
+Diary.prototype.entries = function() {
+    return this.data.entries;
+}
+
+/**
+ * Get/set the user's preferred day length
+ *
+ * @param {number=} day_length - new preferred day length
+ * @return {number} preferred day length
+ */
+Diary.prototype.preferred_day_length = function(preferred_day_length) {
+    if ( preferred_day_length !== undefined ) {
+        this.data.preferredDayLength = preferred_day_length;
+        if ( !this.constructed_from_string ) {
+            localStorage.setItem( 'diary:data', this.serialise() );
+        }
+    }
+    return this.data.preferredDayLength;
+}
+
+/**
+ * Get/set the private storage object
+ *
+ * This is your private key/value store.  The toolkit itself
+ * guarantees never to do anything with this data.
+ *
+ * @param {Object=} private_storage - new private storage object
+ * @return {number} private storage object
+ */
+Diary.prototype.private_storage = function(private_storage) {
+    if ( private_storage !== undefined ) {
+        this.data.privateStorage = private_storage;
+        if ( !this.constructed_from_string ) {
+            localStorage.setItem( 'diary:data', this.serialise() );
+        }
+    }
+    return this.data.privateStorage;
+}
+
+/**
+ * Get the offset between the first entry in our diary and the first entry on the server
+ *
+ * If you want to manipulate server-side data, use other functions
+ * that more clearly communicate what information you want to send to
+ * the server.
+ *
+ * @see splice_entries
+ * @see server
+ *
+ * @readonly
+ *
+ * @return {number} offset between the first entry in our diary and the first entry on the server
+ */
+Diary.prototype.server_entries_offset = function() {
+    return this.data.serverEntriesOffset;
+}
+
+/**
+ * Get the number of entries that have been successfully sent to the server
+ *
+ * If you want to manipulate server-side data, use other functions
+ * that more clearly communicate what information you want to send to
+ * the server.
+ *
+ * @see splice_entries
+ * @see server
+ *
+ * @readonly
+ *
+ * @return {number} number of entries that have been successfully sent to the server
+ */
+Diary.prototype.server_entries_sent = function() {
+    return this.data.serverEntriesSent;
+}
+
+/*
+ * HIGH-LEVEL ENTRY MANAGEMENT
+ */
 
 function create_entry(event,timestamp,related,comment) {
 
@@ -522,16 +625,10 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
 
 }
 
-/**
- * Set the diary's preferred day length
- *
- * @param {number} day_length - preferred day length
- */
-Diary.prototype.set_preferred_day_length = function(day_length) {
-    this.data.preferredDayLength = day_length;
-    this.save();
-}
 
+/*
+ * COMPUTED INFORMATION
+ */
 
 /**
  * Calculate diary statistics
@@ -792,6 +889,10 @@ Diary.prototype.mode = function() {
     }
     return NaN;
 }
+
+/*
+ * EXPORT THE CLASS
+ */
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = Diary;
