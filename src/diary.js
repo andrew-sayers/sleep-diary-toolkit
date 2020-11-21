@@ -891,6 +891,56 @@ Diary.prototype.mode = function() {
 }
 
 /*
+ * EXPORT FORMATS
+ */
+
+/**
+ * Get a JSON string of the diary
+ * @return {string}
+ */
+Diary.prototype.toJSON = function() {
+    return JSON.stringify(this.data.toJSON());
+}
+
+/**
+ * Get a list of columns describing the diary entries
+ * @return {Array[]}
+ */
+Diary.prototype.toColumns = function() {
+    var ret = [
+        ["time","event","related time","comment"]
+    ];
+    this.data.entries.forEach( function(entry) {
+        ret.push([
+            entry.timestamp,
+            event_id_to_string[entry.event],
+            entry.related||'',
+            entry.comment||''
+        ]);
+    });
+    return ret;
+}
+
+/**
+ * Get a list of columns describing the analysed diary
+ * @return {Array[]}
+ */
+Diary.prototype.toColumnsCalendar = function() {
+    var ret = [
+        ["Measured sleep time","Measured wake time","Estimated sleep time","Estimated wake time"]
+    ];
+    this.analyse().sleeps.forEach(function(sleep) {
+        ret.push([
+            sleep.sleep_time||'',
+            sleep.wake_time ||'',
+            sleep.estimated_sleep_time,
+            sleep.estimated_wake_time
+        ]);
+    });
+    return ret;
+}
+
+/*
  * EXPORT THE CLASS
  */
 
