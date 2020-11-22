@@ -158,7 +158,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line97">line 97</a>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line102">line 102</a>
     </li></ul></dd>
     
 
@@ -215,90 +215,6 @@
 
         
             
-<h4 class="name" id="data"><span class="type-signature">(readonly) </span>data<span class="type-signature"> :<a href="diary_type.html">diary_type</a></span></h4>
-
-
-
-
-<div class="description">
-    Actual diary data
-
-Do not modify entries directly.  Use the diary functions provided.
-The diary functions save the data and notify any server the user has requested.
-</div>
-
-
-
-    <h5>Type:</h5>
-    <ul>
-        <li>
-            
-<span class="param-type"><a href="diary_type.html">diary_type</a></span>
-
-
-        </li>
-    </ul>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line136">line 136</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-    <dt class="tag-see">See:</dt>
-    <dd class="tag-see">
-        <ul>
-            <li>add_entry</li>
-        
-            <li>splice_entries</li>
-        </ul>
-    </dd>
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
 <h4 class="name" id="event_id_to_string"><span class="type-signature"></span>event_id_to_string<span class="type-signature"></span></h4>
 
 
@@ -343,7 +259,7 @@ The diary functions save the data and notify any server the user has requested.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line180">line 180</a>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line201">line 201</a>
     </li></ul></dd>
     
 
@@ -410,7 +326,7 @@ The diary functions save the data and notify any server the user has requested.
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line165">line 165</a>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line186">line 186</a>
     </li></ul></dd>
     
 
@@ -432,8 +348,2917 @@ The diary functions save the data and notify any server the user has requested.
 
 
         
+            
+<h4 class="name" id="inverse_of"><span class="type-signature"></span>inverse_of<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    Events that are natural opposites (e.g. "wake" and "sleep")
+</div>
+
+
+
+
+
+
+
+<dl class="details">
+
     
 
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line211">line 211</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>console.log(diary.inverse_of(diary.event_string_to_id["WAKE"])); // prints diary.event_string_to_id["SLEEP"]</code></pre>
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="add_entry"><span class="type-signature"></span>add_entry<span class="signature">(event, timestamp<span class="signature-attributes">opt</span>, related<span class="signature-attributes">opt</span>, comment<span class="signature-attributes">opt</span>, success_callback<span class="signature-attributes">opt</span>, error_callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Append a diary entry
+
+<p>Optional arguments default to useful values based on the diary object.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>event</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+|
+
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">event to add</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>timestamp</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">time in milliseconds past the epoch</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>related</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">e.g. the target timestamp for RETARGETED</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>comment</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">text comment</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>success_callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">called when the update is complete</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>error_callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">called if the update fails</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line578">line 578</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>// these two do the same thing:
+    diary.add_entry("wake");
+    diary.add_entry(0,new Date().getTime());</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="entries"><span class="type-signature"></span>entries<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;<a href="Ientry_type.html">Ientry_type</a>>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get the list of entries
+
+If you want to replace the list of entries altogether, use other
+functions that more clearly communicate what information you want
+to send to the server.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line442">line 442</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>splice_entries</li>
+        
+            <li>server</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    entries
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;<a href="Ientry_type.html">Ientry_type</a>></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="mode"><span class="type-signature"></span>mode<span class="signature">()</span><span class="type-signature"> &rarr; {number|NaN}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Current sleep/wake mode
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line1170">line 1170</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    ID of the most recent sleep/wake event (if present)
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+|
+
+<span class="param-type">NaN</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>switch ( diary.mode() ) {
+    case diary.event_string_to_id.WAKE:
+      console.log("user woke up more recently than going to sleep");
+      break;
+    case diary.event_string_to_id.SLEEP:
+      console.log("user went to sleep more recently than waking up");
+      break;
+    default:
+      console.log("user has not registered any wake or sleep events");
+  }</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="private_storage"><span class="type-signature"></span>private_storage<span class="signature">(private_storage<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get/set the private storage object
+
+This is your private key/value store.  The toolkit itself
+guarantees never to do anything with this data.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>private_storage</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">new private storage object</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line477">line 477</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    private storage object
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="save"><span class="type-signature"></span>save<span class="signature">(save_if_string<span class="signature-attributes">opt</span>, success_callback<span class="signature-attributes">opt</span>, error_callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Save a diary object to localStorage
+
+<p><tt>save_if_string</tt> resets the internal "constructed_from_string" flag, allowing this diary to be saved.</p>
+
+<p>During development, it is often useful to load example data from a string,
+and test your save functionality without actually overwriting real data.
+By default, this function will print a warning and refuse to save data constructed from a string.
+The <tt>save_if_string</tt> argument overrides that behaviour.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>save_if_string</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">save the object even if it was constructed from a string</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>success_callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">called when the update is complete</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>error_callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">called if the update fails</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line256">line 256</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>diary.save();</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="serialise"><span class="type-signature"></span>serialise<span class="signature">()</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Convert a diary object to a string
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line224">line 224</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>diary.serialise(); // returns 'Diary("...");'</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="server"><span class="type-signature"></span>server<span class="signature">(server<span class="signature-attributes">opt</span>, success_callback<span class="signature-attributes">opt</span>, error_callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get/set the server that receives updates
+
+<p>Will call <tt>error_callback()</tt> if we need to notify the server but the request fails.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>server</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">URL of the server (empty or missing to disable the server)</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>success_callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">called when the update is complete</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>error_callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">called if the update fails</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line370">line 370</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    server that will receive updates
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>diary.server(
+      "https://example.com/",
+      () => console.log("server activated"),
+      () => console.log("could not connect to server"),
+    );</code></pre>
+
+    <pre class="prettyprint"><code>diary.server(null); // stop sending updates to a server</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="server_entries_offset"><span class="type-signature"></span>server_entries_offset<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get the offset between the first entry in our diary and the first entry on the server
+
+If you want to manipulate server-side data, use other functions
+that more clearly communicate what information you want to send to
+the server.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line503">line 503</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>splice_entries</li>
+        
+            <li>server</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    offset between the first entry in our diary and the first entry on the server
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="server_entries_sent"><span class="type-signature"></span>server_entries_sent<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get the number of entries that have been successfully sent to the server
+
+If you want to manipulate server-side data, use other functions
+that more clearly communicate what information you want to send to
+the server.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line523">line 523</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li>splice_entries</li>
+        
+            <li>server</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    number of entries that have been successfully sent to the server
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="sleep_wake_periods"><span class="type-signature"></span>sleep_wake_periods<span class="signature">(minimum_date<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {Array.&lt;Object>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Calculate sleep/wake periods
+
+<p>This function tries to account for common data entry issues.
+For example, if a user normally has a 25 hour day, but appears to
+have occasional 50 hour days, we assume they just forget to press
+the button sometimes.</p>
+
+<p>This function also needs to balance the needs of two user
+groups.  New users may start adding events before they register a
+sleep or wake event, then expect to see graphs update based on that
+data.  Whereas long-time users may find that early data causes
+problems with their analyses.  We delete those early events once
+the list of sleep/wake events is long enough that we don't expect
+them to care any more.</p>
+
+<p>This function estimates the current "day number" associated with
+each sleep/wake period.  This number may be useful for creating
+graphs, but should not be relied upon for statistics.  For example,
+people with polyphasic sleep might not have a meaningful concept of
+days.  Day numbers usually increase by one at a time, but can
+increase by two at a time if the user appears to have forgotten to
+log sleep/wake events for a while.</p>
+
+<p>This function provides summary statistics for user's whole days,
+and for the primary sleep period in each day.  Because real-world
+data tends to be quite messy, the function provides several related
+values:</p>
+
+<ul>
+ <li>The <tt>recommended_average</tt> is the best guess at what the
+     user would intuitively consider the average.  The exact
+     calculation is chosen from the list below, and may change in
+     future.  It is currently the <tt>trimmed_mean</tt>.  If you
+     don't have any specific requirements, you should use this and
+     ignore the others.</li>
+ <li>The <tt>mean</tt> and <tt>standard_deviation</tt> are
+     traditional summary statistics, but are not recommended
+     because real-world data tends to skew these values higher than
+     one would expect.</li>
+ <li>The <tt>trimmed_mean</tt> and <tt>trimmed_standard_deviation</tt>
+     produce more robust values in cases like ours, because they
+     ignore the highest and lowest few records.
+ <li>The <tt>median</tt> and <tt>interquartile_range</tt> produce
+     more robust results, but tend to be less representative when
+     there are only a few outliers in the data.
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>minimum_date</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">only return periods that start at or after this date</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line767">line 767</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    list of sleep/wake periods
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Object></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>diary.sleep_wake_periods(); // returns something like the following:
+    {
+      records: [
+        {
+          // status is "awake" or "asleep" - two events with the same status can occur if the user forgot to log some data:
+          status: "awake",
+          // start and end time (in seconds past the Unix epoch), estimated if the user forgot to log some data:
+          start_time: 12345678,
+          end_time: 23456789,
+          // raw diary entries for the start/end time, or null if the user forgot to log some data:
+          start_entry: { ... },
+          end_entry: { ... },
+          // other diary entries that occurred during this period:
+          mid_entries: { ... },
+          // estimated duration of this period (see above):
+          day_number: 1,
+          // true if the current day number is greater than the previous period's day number:
+          start_of_new_day: true,
+          // target wake time, as of the end of this period
+          target: ...,
+          // this is set if it looks like the user forgot to log some data:
+          missing_event_after: true
+        },
+        ...
+      ],
+      day_summary: {
+        // number of milliseconds in the average biological day:
+        trimmed_mean: 12345,
+        // a day is usually within this many milliseconds of the mean:
+        trimmed_standard_deviation: 12.34,
+        // duration of each day, or undefined if the user forgot to log some data:
+        records: [ 12344, undefined, 12346, ... ],
+      },
+      sleep_summary: {
+        // number of milliseconds in the average primary sleep:
+        trimmed_mean: 12345,
+        // a primary sleep is usually within this many milliseconds of the mean:
+        trimmed_standard_deviation: 12.34,
+        // duration of each primary sleep, or undefined if the user forgot to log some data:
+        records: [ 1233, undefined, 1235, ... ],
+      },</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="splice_entries"><span class="type-signature"></span>splice_entries<span class="signature">(start, delete_count, entries, success_callback<span class="signature-attributes">opt</span>, error_callback<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Splice the list of entries
+
+Each value in the list of entries should be either an entry object,
+or a list of arguments similar to those passed to add_entry()
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>start</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">zero-based index at which to start</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>delete_count</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">number of entries to remove</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>entries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;Array></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">entries to insert</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>success_callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">called when the splice is complete</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>error_callback</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last">called if the splice fails</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line604">line 604</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Examples</h5>
+    
+    <pre class="prettyprint"><code>diary.splice_entries(0,diary.data.entries.length); // delete all diary entries</code></pre>
+
+    <pre class="prettyprint"><code>diary.splice_entries(10,1,[['WAKE']]); // replace an existing entry</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="suggested_day_lengths"><span class="type-signature"></span>suggested_day_lengths<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;Object>|undefined}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Calculate suggested day lengths
+
+<p>If a user has specified a preferred day length and a target wake
+time, we can suggest possible bed times based on the number of days
+between now and then.  Otherwise, we calculate a likely bed time
+based on recent data</p>
+
+<p>This function will normally return an array with two elements
+(indicating "early" and "late" bed times).  It will return an array
+with one element if it was only able to generate one
+recommendation.  And it will return <tt>undefined</tt> if no bed
+time could be calculated.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line1066">line 1066</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    list of sleep/wake periods
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Object></span>
+|
+
+<span class="param-type">undefined</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>diary.suggested_day_lengths(); // returns something like the following:
+    [
+      {
+        bed_time: 123456789, // recommended time the user should next go to bed
+        day_length: 1234567, // number of milliseconds in a user's biological day
+        days_remaining: 123, // number of day_length's until the target
+      },
+      // there may also be a second record with the same structure
+    ]</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="target_timestamp"><span class="type-signature"></span>target_timestamp<span class="signature">()</span><span class="type-signature"> &rarr; {number|NaN}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Current target timestamp
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line1138">line 1138</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    current target (or zero if no current target)
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+|
+
+<span class="param-type">NaN</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>var target = diary.target_timestamp();</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="toColumns"><span class="type-signature"></span>toColumns<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;Array>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get a list of columns describing the diary entries
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line1195">line 1195</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Array></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="toColumnsCalendar"><span class="type-signature"></span>toColumnsCalendar<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;Array>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get a list of columns describing the analysed diary
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line1215">line 1215</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array.&lt;Array></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="toJSON"><span class="type-signature"></span>toJSON<span class="signature">()</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Get a JSON string of the diary
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line1186">line 1186</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="update"><span class="type-signature"></span>update<span class="signature">(update)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Update the diary with the specified events
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>update</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">serialised update object</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="diary.js.html">diary.js</a>, <a href="diary.js.html#line333">line 333</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
     
 
     
@@ -455,7 +3280,7 @@ The diary functions save the data and notify any server the user has requested.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Thu Nov 19 2020 09:51:53 GMT+0000 (Coordinated Universal Time)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Sun Nov 22 2020 20:49:51 GMT+0000 (Coordinated Universal Time)
 </footer>
 
 <script> prettyPrint(); </script>
