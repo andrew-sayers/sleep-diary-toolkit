@@ -5,12 +5,12 @@
  * @license {name of license}
  */
 
-/*
- * Add any JavaScript for your page here
- */
-
 // Fix annoying issues with specific web browsers:
 browser_utils.fix_browser_issues();
+
+/*
+ * Use or delete the following examples in your program
+ */
 
 // Parse URL parameters:
 var search_params = browser_utils.parse_search_params(location.search);
