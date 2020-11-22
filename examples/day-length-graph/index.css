@@ -1,0 +1,14 @@
+/**
+ * @file Graph of recent day lengths
+ * @author Andrew Sayers (andrew-github.com@pileofstuff.org)
+ * @copyright 2020
+ * @license MIT
+ */
+
+body {
+    text-align: center;
+}
+
+.bar {
+    fill: steelblue;
+}
