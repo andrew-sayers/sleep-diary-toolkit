@@ -215,6 +215,7 @@ Diary.prototype.inverse_of[Diary.prototype.event_string_to_id.SLEEP] = Diary.pro
 /**
  * Convert a diary object to a string
  *
+ * @memberof Diary
  * @return {string}
  *
  * @example
@@ -242,6 +243,8 @@ Diary.prototype.serialise = function() {
  * and test your save functionality without actually overwriting real data.
  * By default, this function will print a warning and refuse to save data constructed from a string.
  * The <tt>save_if_string</tt> argument overrides that behaviour.</p>
+ *
+ * @memberof Diary
  *
  * @param {boolean=} save_if_string - save the object even if it was constructed from a string
  * @param {function=} success_callback - called when the update is complete
@@ -323,6 +326,8 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
 /**
  * Update the diary with the specified events
  *
+ * @memberof Diary
+ *
  * @param {string} update - serialised update object
  */
 Diary.prototype.update = function(data) {
@@ -345,6 +350,8 @@ Diary.prototype.update = function(data) {
  * Get/set the server that receives updates
  *
  * <p>Will call <tt>error_callback()</tt> if we need to notify the server but the request fails.</p>
+ *
+ * @memberof Diary
  *
  * @param {string=} server - URL of the server (empty or missing to disable the server)
  * @param {function=} success_callback - called when the update is complete
@@ -426,6 +433,8 @@ Diary.prototype.server = function( server, send_all_entries, success_callback, e
  * @see splice_entries
  * @see server
  *
+ * @memberof Diary
+ *
  * @readonly
  *
  * @return {Array.<Ientry_type>} entries
@@ -460,6 +469,8 @@ Diary.prototype.preferred_day_length = function(preferred_day_length) {
  * This is your private key/value store.  The toolkit itself
  * guarantees never to do anything with this data.
  *
+ * @memberof Diary
+ *
  * @param {Object=} private_storage - new private storage object
  * @return {number} private storage object
  */
@@ -483,6 +494,8 @@ Diary.prototype.private_storage = function(private_storage) {
  * @see splice_entries
  * @see server
  *
+ * @memberof Diary
+ *
  * @readonly
  *
  * @return {number} offset between the first entry in our diary and the first entry on the server
@@ -500,6 +513,8 @@ Diary.prototype.server_entries_offset = function() {
  *
  * @see splice_entries
  * @see server
+ *
+ * @memberof Diary
  *
  * @readonly
  *
@@ -546,6 +561,8 @@ function create_entry(event,timestamp,related,comment) {
  *
  * <p>Optional arguments default to useful values based on the diary object.</p>
  *
+ * @memberof Diary
+ *
  * @param {string|number} event - event to add
  * @param {number=} timestamp - time in milliseconds past the epoch
  * @param {number=} related - e.g. the target timestamp for RETARGETED
@@ -570,6 +587,8 @@ Diary.prototype.add_entry = function(event,timestamp,related,comment,success_cal
  *
  * Each value in the list of entries should be either an entry object,
  * or a list of arguments similar to those passed to add_entry()
+ *
+ * @memberof Diary
  *
  * @param {number} start - zero-based index at which to start
  * @param {number} delete_count - number of entries to remove
@@ -694,6 +713,8 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
  *      more robust results, but tend to be less representative when
  *      there are only a few outliers in the data.
  * </ul>
+ *
+ * @memberof Diary
  *
  * @param {number=} minimum_date - only return periods that start at or after this date
  *
@@ -1026,6 +1047,8 @@ Diary.prototype.sleep_wake_periods = function(minimum_date) {
  * recommendation.  And it will return <tt>undefined</tt> if no bed
  * time could be calculated.</p>
  *
+ * @memberof Diary
+ *
  * @return {Object[]|undefined} list of sleep/wake periods
  *
  * @example
@@ -1104,6 +1127,9 @@ Diary.prototype.suggested_day_lengths = function() {
 
 /**
  * Current target timestamp
+ *
+ * @memberof Diary
+ *
  * @return {number|NaN} current target (or zero if no current target)
  *
  * @example
@@ -1124,6 +1150,9 @@ Diary.prototype.target_timestamp = function() {
 
 /**
  * Current sleep/wake mode
+ *
+ * @memberof Diary
+ *
  * @return {number|NaN} ID of the most recent sleep/wake event (if present)
  *
  * @example
@@ -1151,6 +1180,7 @@ Diary.prototype.mode = function() {
 
 /**
  * Get a JSON string of the diary
+ * @memberof Diary
  * @return {string}
  */
 Diary.prototype.toJSON = function() {
@@ -1159,6 +1189,7 @@ Diary.prototype.toJSON = function() {
 
 /**
  * Get a list of columns describing the diary entries
+ * @memberof Diary
  * @return {Array[]}
  */
 Diary.prototype.toColumns = function() {
@@ -1178,6 +1209,7 @@ Diary.prototype.toColumns = function() {
 
 /**
  * Get a list of columns describing the analysed diary
+ * @memberof Diary
  * @return {Array[]}
  */
 Diary.prototype.toColumnsCalendar = function() {
