@@ -81,6 +81,11 @@ function encode( type, data ) {
     return base64_encode(type.encode(data).finish());
 }
 
+
+/*
+ * CONSTRUCT, CREATE AND LOAD DIARY OBJECTS
+ */
+
 /**
  * Load sleep diary data from a string or from localStorage
  * @global
@@ -101,13 +106,14 @@ function Diary(data) {
      * @member {boolean}
      * @private
      */
-    this.constructed_from_string = !!data;
+    this.constructed_from_string = data !== undefined;
+
     /**
-     * Number of requests recently sent to the server
+     * Queue of functions waiting to be sent to the server
      * @member {number}
      * @private
      */
-    this.sending = 0;
+    this.server_queue = [];
 
     if ( data === undefined ) {
 
@@ -123,13 +129,15 @@ function Diary(data) {
             /**
              * Actual diary data
              *
-             * Do not modify entries directly.  Use the diary functions provided.
-             * The diary functions save the data and notify any server the user has requested.
+             * Do not access entries directly.  Use the diary functions provided.
              *
              * @member {diary_type}
-             * @public
-             * @readonly
+             * @private
              *
+             * @see server
+             * @see preferred_day_length
+             * @see entries
+             * @see private_storage
              * @see add_entry
              * @see splice_entries
              */
@@ -142,7 +150,7 @@ function Diary(data) {
     if ( typeof data == 'string' || data instanceof String ) {
 
         // unwrap the Diary(""), if present:
-        data = data.replace(/^Diary\(["'](.*)["']\)/,"$1");
+        data = data.replace(/\n+$/,'').replace(/^Diary\(["'](.*)["']\)/,"$1");
 
         this.data = data_structures.diary_type.decode(base64_decode(data));
 
@@ -152,6 +160,19 @@ function Diary(data) {
 
     }
 
+}
+
+Diary.prototype._push_server_queue = function(callback) {
+    this.server_queue.push(callback);
+    if ( this.server_queue.length == 1 ) {
+        callback.call(this);
+    }
+}
+Diary.prototype._pop_server_queue = function() {
+    this.server_queue.shift();
+    if ( this.server_queue.length ) {
+        this.server_queue[0].call(this);
+    }
 }
 
 /**
@@ -180,8 +201,21 @@ Object.keys(Diary.prototype.event_string_to_id).forEach( function(key) {
 Diary.prototype.event_id_to_string = event_id_to_string;
 
 /**
+ * Events that are natural opposites (e.g. "wake" and "sleep")
+ * @memberof Diary
+ * @public
+ *
+ * @example
+ *   console.log(diary.inverse_of(diary.event_string_to_id["WAKE"])); // prints diary.event_string_to_id["SLEEP"]
+ */
+Diary.prototype.inverse_of = [];
+Diary.prototype.inverse_of[Diary.prototype.event_string_to_id.WAKE ] = Diary.prototype.event_string_to_id.SLEEP;
+Diary.prototype.inverse_of[Diary.prototype.event_string_to_id.SLEEP] = Diary.prototype.event_string_to_id.WAKE ;
+
+/**
  * Convert a diary object to a string
  *
+ * @memberof Diary
  * @return {string}
  *
  * @example
@@ -203,12 +237,14 @@ Diary.prototype.serialise = function() {
 /**
  * Save a diary object to localStorage
  *
- * <p><tt>save_if_string</tt> enables saving of diaries constructed from strings.</p>
+ * <p><tt>save_if_string</tt> resets the internal "constructed_from_string" flag, allowing this diary to be saved.</p>
  *
  * <p>During development, it is often useful to load example data from a string,
  * and test your save functionality without actually overwriting real data.
  * By default, this function will print a warning and refuse to save data constructed from a string.
  * The <tt>save_if_string</tt> argument overrides that behaviour.</p>
+ *
+ * @memberof Diary
  *
  * @param {boolean=} save_if_string - save the object even if it was constructed from a string
  * @param {function=} success_callback - called when the update is complete
@@ -226,54 +262,60 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
 
     } else {
 
+        this.constructed_from_string = false;
+
         localStorage.setItem( 'diary:data', this.serialise() );
 
-        if (
-            this.data.server &&
-            this.data.serverEntriesSent < this.data.entries.length
-        ) {
+        if ( this.data.server ) {
+            this._push_server_queue(function() {
 
-            if ( !this.sending++ ) {
+                if ( this.data.serverEntriesSent < this.data.entries.length ) {
 
-                var that = this,
-                    req = new XMLHttpRequest(),
-                    new_server_entries_sent = this.data.server_entries.length,
-                    to_send = encode(data_structures.diary_update_type,{
-                        entries: this.data.entries.slice(this.data.serverEntriesSent),
-                        start  : this.data.serverEntriesSent - this.data.serverEntriesOffset,
-                    })
-                ;
+                    var self = this,
+                        req = new XMLHttpRequest(),
+                        length = this.data.entries.length - this.data.serverEntriesSent,
+                        url
+                    ;
 
-                // save the data on the server:
-                req.onload = function(e) {
-                    that.data.serverEntriesSent = new_server_entries_sent;
-                    that.save();
-                    that.sending = 0;
-                    if (
-                        that.diary.server &&
-                        new_server_entries_sent < that.diary.entries.length
-                    ) {
-                        // diary was updated while the request was in flight - send again:
-                        that.save();
-                        if ( success_callback ) success_callback();
+                    for (;;) { // construct a URL short enough that all servers will accept it
+                        url = this.data.server + encode(data_structures.diary_update_type,{
+                            entries: this.data.entries.slice(self.data.serverEntriesSent,self.data.serverEntriesSent+length),
+                            start  : self.data.serverEntriesSent - this.data.serverEntriesOffset,
+                        });
+                        if ( length == 1 || url.length <= 2048 ) break;
+                        length = Math.ceil(length/2);
                     }
-                };
-                req.onerror = function(e) {
-                    // ignore any requests sent while this request was in flight:
-                    that.sending = 0;
-                    if ( error_callback ) error_callback();
+
+                    // save the data on the server:
+                    req.onload = function(e) {
+                        if ( req.status < 500 ) {
+                            self.data.serverEntriesSent += length;
+                            self._pop_server_queue();
+                            self.save(save_if_string,success_callback,error_callback);
+                        } else {
+                            self._pop_server_queue();
+                            if ( error_callback ) error_callback();
+                        }
+                    };
+                    req.onerror = function(e) {
+                        // ignore any requests sent while this request was in flight:
+                        self._pop_server_queue();
+                        if ( error_callback ) error_callback();
+                    }
+                    req.open( "GET", url );
+                    req.send();
+
+                } else {
+
+                    this._pop_server_queue();
+
                 }
-                req.open( "GET", this.data.server + to_send );
-                req.send();
 
-            } else {
+            });
 
-                if ( success_callback ) success_callback();
+        } else if ( success_callback ) {
 
-            }
-        } else {
-
-            if ( success_callback ) success_callback();
+            success_callback();
 
         }
 
@@ -282,13 +324,39 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
 }
 
 /**
- * Set the server that receives updates
+ * Update the diary with the specified events
+ *
+ * @memberof Diary
+ *
+ * @param {string} update - serialised update object
+ */
+Diary.prototype.update = function(data) {
+    var update = data_structures.diary_update_type.decode(base64_decode(data));
+    if ( update.reset ) {
+        this.data.entries.splice( 0, this.data.entries.length );
+    }
+    this.data.entries.splice.apply(
+        this.data.entries,
+        [ update.start, update.delete_count ].concat(update.entries||[])
+    );
+}
+
+
+/*
+ * LOW-LEVEL MEMBER FUNCTIONS
+ */
+
+/**
+ * Get/set the server that receives updates
  *
  * <p>Will call <tt>error_callback()</tt> if we need to notify the server but the request fails.</p>
+ *
+ * @memberof Diary
  *
  * @param {string=} server - URL of the server (empty or missing to disable the server)
  * @param {function=} success_callback - called when the update is complete
  * @param {function=} error_callback - called if the update fails
+ * @return {string=} server that will receive updates
  *
  * @example
  *     diary.server(
@@ -299,93 +367,166 @@ Diary.prototype.save = function(save_if_string, success_callback, error_callback
  * @example
  *     diary.server(null); // stop sending updates to a server
  */
-Diary.prototype.server = function( server, success_callback, error_callback ) {
-    if ( server ) {
-        if ( server != this.data.server ) {
-            var that = this,
-                target = this.target_timestamp(),
-                entries = target ? [
-                    // make sure the server knows we have a target
-                    data_structures.entry_type.create({
-                        timestamp: new Date().getTime(),
-                        event: this.event_string_to_id.RETARGET,
-                        related: target,
-                    })
-                ] : undefined,
-                to_send = encode(data_structures.diary_update_type,{
-                    reset: true,
-                    entries: entries,
-                }),
-                req = new XMLHttpRequest()
-            ;
-            // save the data on the server:
-            req.onload = function(e) {
-                that.data.server = server;
-                that.data.serverEntriesSent = target?1:0;
-                that.data.serverEntriesOffset = that.data.entries.length - that.data.serverEntriesSent;
-                that.save();
-                if ( success_callback ) success_callback();
-            };
-            if ( error_callback ) req.onerror = function() { error_callback(); }
-            req.open( "GET", server + to_send );
-            req.send();
-        }
-    } else {
+Diary.prototype.server = function( server, send_all_entries, success_callback, error_callback ) {
+    if ( server === '' ) {
         delete this.data.server;
         this.data.serverEntriesSent = 0;
         this.data.serverEntriesOffset = 0;
-        this.save();
-        if ( success_callback ) success_callback();
-    }
-}
-
-/**
- * Set the diary's preferred day length
- *
- * @param {number} day_length - preferred day length
- */
-Diary.prototype.set_preferred_day_length = function(day_length) {
-    this.data.preferredDayLength = day_length;
-    this.save();
-}
-
-
-/**
- * Send all diary entries to the server
- *
- * <p>Will call <tt>error_callback()</tt> if the request fails.</p>
- *
- * @param {function=} success_callback - called when the update is complete
- * @param {function=} error_callback - called if the update fails
- *
- * @example
- *     diary.send_all_entries(
- *       () => console.log("server activated");
- *       () => console.log("could not connect to server");
- *     );
- */
-Diary.prototype.send_all_entries = function( success_callback, error_callback ) {
-    if ( this.data.server ) {
-        var that = this,
-            to_send = encode(data_structures.diary_update_type,{
-                entries: this.data.entries,
-                reset  : true,
-            }),
-            entries_sent = this.data.entries.length,
-            req = new XMLHttpRequest()
-        ;
-        // save the data on the server:
-        req.onload = function(e) {
-            that.data.serverEntriesSent = entries_sent;
-            that.data.serverEntriesOffset = 0;
-            that.save();
+        this.save(false,success_callback,error_callback);
+    } else if ( server !== undefined ) {
+        if ( server == this.data.server && ( !send_all_entries || this.data.serverEntriesOffset == 0 ) ) {
             if ( success_callback ) success_callback();
-        };
-        if ( error_callback ) req.onerror = function() { error_callback(); }
-        req.open( "GET", this.data.server + to_send );
-        req.send();
+        } else {
+            this._push_server_queue(function() {
+                var self = this,
+                    target = this.target_timestamp(),
+                    entries = ( target && !send_all_entries ) ? [
+                        // make sure the server knows we have a target
+                        data_structures.entry_type.create({
+                            timestamp: new Date().getTime(),
+                            event: this.event_string_to_id.RETARGET,
+                            related: target,
+                        })
+                    ] : undefined,
+                    to_send = encode(data_structures.diary_update_type,{
+                        reset: true,
+                        entries: entries,
+                    }),
+                    req = new XMLHttpRequest()
+                ;
+                // save the data on the server:
+                req.onload = function(e) {
+                    if ( req.status < 500 ) {
+                        self.data.server = server;
+                        if ( send_all_entries ) {
+                            self.data.serverEntriesSent = self.data.serverEntriesOffset = 0;
+                        } else {
+                            self.data.serverEntriesSent = self.data.entries.length;
+                            self.data.serverEntriesOffset = self.data.entries.length - (target?1:0);
+                        }
+                        self._pop_server_queue();
+                        self.save(false,success_callback,error_callback);
+                    } else {
+                        self._pop_server_queue();
+                        if ( error_callback ) error_callback();
+                    }
+                };
+                req.onerror = function() {
+                    self._pop_server_queue();
+                    if ( error_callback ) error_callback();
+                }
+                req.open( "GET", server + to_send );
+                req.send();
+            });
+        }
     }
+    return this.data.server;
 }
+
+/**
+ * Get the list of entries
+ *
+ * If you want to replace the list of entries altogether, use other
+ * functions that more clearly communicate what information you want
+ * to send to the server.
+ *
+ * @see splice_entries
+ * @see server
+ *
+ * @memberof Diary
+ *
+ * @readonly
+ *
+ * @return {Array.<Ientry_type>} entries
+ */
+Diary.prototype.entries = function() {
+    return this.data.entries;
+}
+
+/**
+ * Get/set the user's preferred day length
+ *
+ * @param {number=} day_length - new preferred day length
+ * @return {number} preferred day length
+ */
+Diary.prototype.preferred_day_length = function(preferred_day_length) {
+    if ( preferred_day_length !== undefined ) {
+        this.data.preferredDayLength = preferred_day_length;
+        if ( !this.constructed_from_string ) {
+            localStorage.setItem( 'diary:data', this.serialise() );
+        }
+    }
+    return (
+        (typeof(this.data.preferredDayLength)=='number')
+            ? this.data.preferredDayLength
+            : parseInt(this.data.preferredDayLength,10)
+    );
+}
+
+/**
+ * Get/set the private storage object
+ *
+ * This is your private key/value store.  The toolkit itself
+ * guarantees never to do anything with this data.
+ *
+ * @memberof Diary
+ *
+ * @param {Object=} private_storage - new private storage object
+ * @return {number} private storage object
+ */
+Diary.prototype.private_storage = function(private_storage) {
+    if ( private_storage !== undefined ) {
+        this.data.privateStorage = private_storage;
+        if ( !this.constructed_from_string ) {
+            localStorage.setItem( 'diary:data', this.serialise() );
+        }
+    }
+    return this.data.privateStorage;
+}
+
+/**
+ * Get the offset between the first entry in our diary and the first entry on the server
+ *
+ * If you want to manipulate server-side data, use other functions
+ * that more clearly communicate what information you want to send to
+ * the server.
+ *
+ * @see splice_entries
+ * @see server
+ *
+ * @memberof Diary
+ *
+ * @readonly
+ *
+ * @return {number} offset between the first entry in our diary and the first entry on the server
+ */
+Diary.prototype.server_entries_offset = function() {
+    return this.data.serverEntriesOffset;
+}
+
+/**
+ * Get the number of entries that have been successfully sent to the server
+ *
+ * If you want to manipulate server-side data, use other functions
+ * that more clearly communicate what information you want to send to
+ * the server.
+ *
+ * @see splice_entries
+ * @see server
+ *
+ * @memberof Diary
+ *
+ * @readonly
+ *
+ * @return {number} number of entries that have been successfully sent to the server
+ */
+Diary.prototype.server_entries_sent = function() {
+    return this.data.serverEntriesSent;
+}
+
+/*
+ * HIGH-LEVEL ENTRY MANAGEMENT
+ */
 
 function create_entry(event,timestamp,related,comment) {
 
@@ -420,20 +561,24 @@ function create_entry(event,timestamp,related,comment) {
  *
  * <p>Optional arguments default to useful values based on the diary object.</p>
  *
+ * @memberof Diary
+ *
  * @param {string|number} event - event to add
  * @param {number=} timestamp - time in milliseconds past the epoch
  * @param {number=} related - e.g. the target timestamp for RETARGETED
  * @param {string=} comment - text comment
+ * @param {function=} success_callback - called when the update is complete
+ * @param {function=} error_callback - called if the update fails
  *
  * @example
- *     diary.add_entry("wake"); // returns the time of the event
- * @example
- *     diary.add_entry(0,new Date().getTime(),my_related);
+ *     // these two do the same thing:
+ *     diary.add_entry("wake");
+ *     diary.add_entry(0,new Date().getTime());
  */
-Diary.prototype.add_entry = function(event,timestamp,related,comment) {
+Diary.prototype.add_entry = function(event,timestamp,related,comment,success_callback,error_callback) {
 
     this.data.entries.push(create_entry(event,timestamp,related,comment));
-    this.save();
+    this.save(false,success_callback,error_callback);
 
 }
 
@@ -441,7 +586,9 @@ Diary.prototype.add_entry = function(event,timestamp,related,comment) {
  * Splice the list of entries
  *
  * Each value in the list of entries should be either an entry object,
- * or a list of argument similar to those passed to add_entry()
+ * or a list of arguments similar to those passed to add_entry()
+ *
+ * @memberof Diary
  *
  * @param {number} start - zero-based index at which to start
  * @param {number} delete_count - number of entries to remove
@@ -464,30 +611,42 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
         entries = [];
     }
 
-    if ( this.data.server && end > this.data.serverEntriesOffset ) {
+    if ( this.data.server && start+delete_count > this.data.serverEntriesOffset ) {
 
-        var that = this,
-            send_offset = Math.max( 0, this.data.serverEntriesOffset - start ),
-            to_send = encode(data_structures.diary_update_type,{
-                entries     : entries,
-                start       : start - this.data.serverEntriesOffset + send_offset,
-                delete_count: Math.max( 0, delete_count - send_offset ),
-            }),
-            req = new XMLHttpRequest()
-        ;
-        // save the data on the server:
-        req.onload = function(e) {
-            that.data.entries.splice.apply(
-                that.data.entries,
-                [ start, delete_count ].concat(entries)
-            );
-            if ( that.data.serverEntriesSent < start+delete_count ) that.data.serverEntriesSent = start+delete_count;
-            that.save();
-            if ( success_callback ) success_callback();
-        };
-        if ( error_callback ) req.onerror = function() { error_callback(); }
-        req.open( "GET", this.data.server + to_send );
-        req.send();
+        this._push_server_queue(function() {
+
+            var self = this,
+                send_offset = Math.max( 0, this.data.serverEntriesOffset - start ),
+                to_send = encode(data_structures.diary_update_type,{
+                    entries     : entries,
+                    start       : start - this.data.serverEntriesOffset + send_offset,
+                    delete_count: Math.max( 0, delete_count - send_offset ),
+                }),
+                req = new XMLHttpRequest()
+            ;
+            // save the data on the server:
+            req.onload = function(e) {
+                if ( req.status < 500 ) {
+                    self.data.entries.splice.apply(
+                        self.data.entries,
+                        [ start, delete_count ].concat(entries)
+                    );
+                    if ( self.data.serverEntriesSent < start+delete_count ) self.data.serverEntriesSent = start+delete_count;
+                    self._pop_server_queue();
+                    self.save(false,success_callback,error_callback);
+                } else {
+                    self._pop_server_queue();
+                    if ( error_callback ) error_callback();
+                }
+            };
+            req.onerror = function() {
+                self._pop_server_queue();
+                if ( error_callback ) error_callback();
+            };
+            req.open( "GET", this.data.server + to_send );
+            req.send();
+
+        });
 
     } else {
 
@@ -495,237 +654,482 @@ Diary.prototype.splice_entries = function( start, delete_count, entries, success
             this.data.entries,
             [ start, delete_count ].concat(entries)
         );
-        this.save();
-        if ( success_callback ) success_callback();
+        this.save(false,success_callback,error_callback);
 
     }
 
 }
 
 
+/*
+ * COMPUTED INFORMATION
+ */
+
+
 /**
- * Calculate diary statistics
+ * Calculate sleep/wake periods
  *
- * <p>These statistics try to account for common issues with entered data.
- * For example, if a user normally has a 25 hour day, but appears to have
- * occasional 50 hour days, we assume they just forget to press the button
- * sometimes.</p>
+ * <p>This function tries to account for common data entry issues.
+ * For example, if a user normally has a 25 hour day, but appears to
+ * have occasional 50 hour days, we assume they just forget to press
+ * the button sometimes.</p>
  *
- * <p>The <a href="https://en.wikipedia.org/wiki/Truncated_mean">trimmed mean</a>
- * is a way of calculating the average that ignores extremely high or extremely
- * low values.  This is quite robust for users that enter data fairly reliably
- * and have fairly constant day lengths.  But it could produce misleading results
- * for e.g. someone with an extremely variable day length.</p>
+ * <p>This function also needs to balance the needs of two user
+ * groups.  New users may start adding events before they register a
+ * sleep or wake event, then expect to see graphs update based on that
+ * data.  Whereas long-time users may find that early data causes
+ * problems with their analyses.  We delete those early events once
+ * the list of sleep/wake events is long enough that we don't expect
+ * them to care any more.</p>
  *
- * <p>A "sleep" usually covers the period between times the moon icon is pressed.
- * But we ignore duplicate button-presses, and try to reconstruct missing data.</p>
+ * <p>This function estimates the current "day number" associated with
+ * each sleep/wake period.  This number may be useful for creating
+ * graphs, but should not be relied upon for statistics.  For example,
+ * people with polyphasic sleep might not have a meaningful concept of
+ * days.  Day numbers usually increase by one at a time, but can
+ * increase by two at a time if the user appears to have forgotten to
+ * log sleep/wake events for a while.</p>
  *
- * @return {Object} analysis
+ * <p>This function provides summary statistics for user's whole days,
+ * and for the primary sleep period in each day.  Because real-world
+ * data tends to be quite messy, the function provides several related
+ * values:</p>
+ *
+ * <ul>
+ *  <li>The <tt>recommended_average</tt> is the best guess at what the
+ *      user would intuitively consider the average.  The exact
+ *      calculation is chosen from the list below, and may change in
+ *      future.  It is currently the <tt>trimmed_mean</tt>.  If you
+ *      don't have any specific requirements, you should use this and
+ *      ignore the others.</li>
+ *  <li>The <tt>mean</tt> and <tt>standard_deviation</tt> are
+ *      traditional summary statistics, but are not recommended
+ *      because real-world data tends to skew these values higher than
+ *      one would expect.</li>
+ *  <li>The <tt>trimmed_mean</tt> and <tt>trimmed_standard_deviation</tt>
+ *      produce more robust values in cases like ours, because they
+ *      ignore the highest and lowest few records.
+ *  <li>The <tt>median</tt> and <tt>interquartile_range</tt> produce
+ *      more robust results, but tend to be less representative when
+ *      there are only a few outliers in the data.
+ * </ul>
+ *
+ * @memberof Diary
+ *
+ * @param {number=} minimum_date - only return periods that start at or after this date
+ *
+ * @return {Object[]} list of sleep/wake periods
  *
  * @example
- *     diary.analyse(diary); // returns something like the following:
- *       {
- *
- *         sleeps: [
- *           {
- *
- *             // sleep/wake events, missing if no event was detected:
- *             sleep_time: 12345,
- *             wake_time: 23456,
- *
- *             // sleep/wake events, estimated if no event was detected:
- *             estimated_sleep_time: 12345,
- *             estimated_wake_time: 23456,
- *
- *             // target wake date/time:
- *             target: 34567,
- *
- *             disruptions: [
- *               // events that occur between "sleep" and "wake" events
- *             ],
- *
- *           },
- *         ],
- *
- *         sleep_duration_stats: {
- *           trimmed_mean: 12.345, // average milliseconds of sleep per day
- *           trimmed_stddev: 1.234, // variability of sleep durations
+ *     diary.sleep_wake_periods(); // returns something like the following:
+ *     {
+ *       records: [
+ *         {
+ *           // status is "awake" or "asleep" - two events with the same status can occur if the user forgot to log some data:
+ *           status: "awake",
+ *           // start and end time (in seconds past the Unix epoch), estimated if the user forgot to log some data:
+ *           start_time: 12345678,
+ *           end_time: 23456789,
+ *           // raw diary entries for the start/end time, or null if the user forgot to log some data:
+ *           start_entry: { ... },
+ *           end_entry: { ... },
+ *           // other diary entries that occurred during this period:
+ *           mid_entries: { ... },
+ *           // estimated duration of this period (see above):
+ *           day_number: 1,
+ *           // true if the current day number is greater than the previous period's day number:
+ *           start_of_new_day: true,
+ *           // target wake time, as of the end of this period
+ *           target: ...,
+ *           // this is set if it looks like the user forgot to log some data:
+ *           missing_event_after: true
  *         },
- *
- *         day_duration_stats: {
- *           trimmed_mean: 12.345, // average milliseconds between waking up
- *           trimmed_stddev: 1.234, // variability of day durations
- *         },
- *
- *        suggested_day_lengths : [ 12.34, 23.45 ],
- *
- *       };
+ *         ...
+ *       ],
+ *       day_summary: {
+ *         // number of milliseconds in the average biological day:
+ *         trimmed_mean: 12345,
+ *         // a day is usually within this many milliseconds of the mean:
+ *         trimmed_standard_deviation: 12.34,
+ *         // duration of each day, or undefined if the user forgot to log some data:
+ *         records: [ 12344, undefined, 12346, ... ],
+ *       },
+ *       sleep_summary: {
+ *         // number of milliseconds in the average primary sleep:
+ *         trimmed_mean: 12345,
+ *         // a primary sleep is usually within this many milliseconds of the mean:
+ *         trimmed_standard_deviation: 12.34,
+ *         // duration of each primary sleep, or undefined if the user forgot to log some data:
+ *         records: [ 1233, undefined, 1235, ... ],
+ *       },
  *
  */
-Diary.prototype.analyse = function() {
-
-    function a_plus_b(a,b) { return a+b; }
-    function calculate_stats(array) {
-        // trimmed mean:
-        array.sort(function(a,b) { return a - b; });
-        array = array.slice( Math.floor(array.length/10), Math.floor(array.length/10)*8 );
-        if ( array.length ) {
-            var mean = array.reduce(a_plus_b) / array.length,
-                stddev = Math.sqrt(
-                    array
-                        .map(function(a) { return Math.pow(a - mean, 2); })
-                        .reduce(a_plus_b)
-                        / array.length
-                )
-            ;
-            return {
-                trimmed_mean: mean,
-                trimmed_stddev: stddev
-            };
-        } else {
-            return {
-                trimmed_mean: 0,
-                trimmed_stddev: 0
-            };
-        }
-    }
+Diary.prototype.sleep_wake_periods = function(minimum_date) {
 
     var one_hour = 60*60*1000, // constant value added for readability
-        that = this,
 
-        // ignore duplicate entries:
-        ignore_repeat_events_within_this_duration = 30*60*1000,
-        dupe_timestamp = NaN, dupe_event = NaN,
-        sleeps = [{ disruptions: [] }], // dummy value used during processing, deleted below
-        target_timestamp = 0
+        /*
+         * We assume that some fraction of days are outliers (e.g. a long
+         * supplementary sleep that got counted as a main sleep, or a pair
+         * of days accidentally recorded as a single day).
+         *
+         * Trimming a certain percentage of days should solve that problem
+         * for most people.
+         */
+        trim_amount = 8/10,
+
+        /*
+         * Users will occasionally press a button twice, or will press
+         * the wrong button and cancel it by pressing another button.
+         *
+         * If the user presses the button several times within this
+         * amount of time, we assume it was just a misclick.
+         */
+        dupe_duration = 30000,
+
+        /*
+         * A user is considered a long-time user once they have
+         * generated more than this many sleep/wake periods.
+         */
+        maximum_new_user_length = 14,
+
+        /*
+         * If we see adjacent "sleep" and "wake" events, we normally
+         * assume they're related.  But it could just be the user
+         * forgot to press the sleep/wake button some times in
+         * between.
+         *
+         * We assume two events are unrelated if they are farther
+         * apart than the following values.
+         */
+        maximum_sleep_duration = 15*one_hour,
+        maximum_wake_duration = 30*one_hour,
+
+        /*
+         * We calculate day numbers by looking for "wake" events
+         * at least this far apart.  We calculate skipped days
+         * by looking for "wake" events at least twice as far
+         * apart as this
+         */
+        minimum_day_duration = 20*one_hour,
+
+        self = this,
+
+        records = [{
+            status: "awake",
+            start_entry: null,
+            end_entry: null,
+            mid_entries: [],
+            target: 0,
+        }],
+
+        /*
+         * Remove entries that look like accidental extra clicks
+         */
+        dupe_timestamp = NaN,
+        dupe_event = NaN,
+
+        day_start = 0,
+        day_number = 0,
+
+        day_durations = [],
+        sleep_durations = [],
+        day_summary,
+        sleep_summary,
+
+        timestamp
     ;
 
-    this.data.entries.forEach(function(entry) {
-        if ( entry.event == that.event_string_to_id.RETARGET ) {
-            target_timestamp = entry.related;
-        } else if (
-            entry.timestamp != dupe_timestamp &&
-            ( entry.timestamp > dupe_timestamp || entry.event != dupe_event )
-        ) {
-            dupe_timestamp = entry.timestamp + ignore_repeat_events_within_this_duration;
+    this.data.entries
+
+        // remove duplicate entries
+        .slice(0).sort(function(a,b) { return b.timestamp - a.timestamp })
+        .filter(function(entry) {
+            var ret = (
+                entry.timestamp < dupe_timestamp ||
+                ( entry.event != dupe_event && self.inverse_of[entry.event] != dupe_event )
+            );
+            dupe_timestamp = entry.timestamp - dupe_duration;
             dupe_event = entry.event;
+            return ret;
+        })
 
-            var sleep = sleeps[sleeps.length-1],
-                push = false;
-
-            switch ( entry.event ) {
-
-            case that.event_string_to_id.WAKE:
-                // add a new sleep if the day would otherwise be absurdly long:
-                if ( sleep.wake_time ) {
-                    push = sleep.wake_time+one_hour < entry.timestamp;
-                } else if ( sleep.sleep_time ) {
-                    push = sleep.sleep_time+(18*one_hour) < entry.timestamp;
+        // build the initial sleep-wake cycle:
+        .reverse()
+        .forEach(function(entry) {
+            /*
+             * NodeJS treats the time as an object of type "Long":
+             */
+            timestamp
+                = (typeof(entry.timestamp)=='number')
+                ? entry.timestamp
+                : parseInt(entry.timestamp,10)
+            ;
+            if ( timestamp >= (minimum_date||0) ) {
+                if ( entry.event == self.event_string_to_id.WAKE ) {
+                    records.push({
+                        status: "awake",
+                        start_time: timestamp,
+                        start_entry: entry,
+                        end_entry: null,
+                        mid_entries: [],
+                        target: records[records.length-1].target,
+                    });
+                } else if ( entry.event == self.event_string_to_id.SLEEP ) {
+                    records.push({
+                        status: "asleep",
+                        start_time: timestamp,
+                        start_entry: entry,
+                        end_entry: null,
+                        mid_entries: [],
+                        target: records[records.length-1].target,
+                    });
                 } else {
-                    push = true;
+                    if ( entry.event == self.event_string_to_id.RETARGET ) {
+                        records[records.length-1].target
+                            = (typeof(entry.related)=='number')
+                            ? entry.related
+                            : parseInt(entry.related,10)
+                        ;
+                    }
+                    records[records.length-1].mid_entries.push(entry);
                 }
-                if (push) sleeps.push(sleep = { disruptions: [] });
-                sleep.wake_time = entry.timestamp;
-                break;
-
-            case that.event_string_to_id.SLEEP:
-                // add a new sleep if the day would otherwise be absurdly long:
-                if ( sleep.sleep_time ) {
-                    push = sleep.wake_time+(1*one_hour) < entry.timestamp;
-                } else if ( sleep.wake_time ) {
-                    push = sleep.wake_time+(6*one_hour) < entry.timestamp;
-                } else {
-                    push = true;
-                }
-                if (push) sleeps.push(sleep = { disruptions: [] });
-                sleep.sleep_time = entry.timestamp;
-                if ( target_timestamp ) {
-                    sleep.target_timestamp = target_timestamp;
-                } else {
-                    delete sleep.target_timestamp;
-                }
-                break;
-
-            default:
-                if ( !sleep.wake_time ) {
-                    // haven't woken up yet
-                    sleep.disruptions.push(entry);
-                }
-
             }
-
-        }
-    });
-
-    // remove useless values:
-    sleeps = sleeps.filter( function(sleep) { return sleep.wake_time && sleep.sleep_time; } );
-
-    // Calculate the trimmed mean sleep duration:
-    var sleep_durations = [], day_durations = [], prev_wake_time = 0;
-    sleeps.forEach( function(sleep) {
-        if ( sleep.wake_time && sleep.sleep_time ) {
-            sleep_durations.push( sleep.wake_time - sleep.sleep_time );
-        }
-        if ( sleep.wake_time && prev_wake_time ) {
-            day_durations.push(sleep.wake_time - prev_wake_time);
-        }
-        prev_wake_time = sleep.wake_time;
-    });
-    var sleep_duration_stats   = calculate_stats(sleep_durations),
-        day_duration_stats     = calculate_stats(day_durations),
-        average_sleep_duration = sleep_duration_stats.trimmed_mean
+        })
     ;
 
-    // add estimated times:
-    sleeps.forEach( function(sleep) {
-        if ( sleep.sleep_time ) {
-            sleep.estimated_sleep_time = sleep.sleep_time;
-            sleep.estimated_wake_time = sleep.wake_time || sleep.sleep_time + average_sleep_duration;
-        } else {
-            sleep.estimated_sleep_time = sleep.wake_time - average_sleep_duration;
-        }
-    });
-
-    var suggested_day_lengths = null,
-        target = this.target_timestamp(),
-        day_length = this.data.preferredDayLength
-    ;
-    if ( sleeps.length && target && day_length ) {
-        var latest_wake_time  = sleeps[sleeps.length-1].estimated_wake_time,
-            latest_sleep_time = sleeps[sleeps.length-1].estimated_sleep_time;
-        if ( target > latest_wake_time ) {
-            var time_remaining = target - latest_wake_time,
-                days_remaining = time_remaining / day_length
-            ;
-            suggested_day_lengths =
-                [
-                    Math.ceil (days_remaining),
-                    Math.floor(days_remaining)
-                ]
-                .filter( function(days) { return days > 0; } )
-                    .map(function(days) {
-                        var day_length = time_remaining/days;
-                        return {
-                            days_remaining: days,
-                            bed_time: latest_sleep_time+day_length,
-                            day_length: day_length,
-                        }
-                    })
-            ;
-        }
+    /*
+     * Tidy up the first few events as best we can.
+     *
+     * See the discussion in the function description.
+     */
+    if ( !records[0].mid_entries.length || records.length > maximum_new_user_length ) {
+        records.shift();
+    } else if ( records.length > 1 ) {
+        records[0].status = ( records[1].status == 'asleep' ) ? 'awake' : 'asleep';
+        records[0].is_first_event = true;
     }
 
+    /*
+     * Calculate extra information
+     */
+    for ( var n=0; n!=records.length; ++n ) {
+
+        var current = records[n],
+            next    = records[n+1];
+
+        // track day numbers:
+        if ( current.status == 'awake' && current.start_time > day_start + minimum_day_duration ) {
+            ++day_number;
+            if ( current.start_time > day_start + minimum_day_duration*2 ) {
+                // assume we skipped a day
+                ++day_number;
+            } else {
+                day_durations[day_number] = current.start_time - day_start;
+            }
+            day_start = current.start_time;
+            current.start_of_new_day = true;
+        }
+        current.day_number = day_number;
+
+        // set end_time, end_entry and missing_event_after:
+        if ( next ) {
+            if ( current.status == 'asleep' ) {
+                if ( next.status == 'asleep' ) {
+                    current.missing_event_after = true;
+                    current.end_time = Math.min( next.start_time, current.start_time+maximum_sleep_duration );
+                } else if ( next.start_time < current.start_time + maximum_sleep_duration ) {
+                    current.end_time = next.start_time;
+                    current.end_entry = next.start_entry;
+                    sleep_durations[day_number] = Math.max( sleep_durations[day_number]||0, next.start_time - current.start_time );
+                } else {
+                    current.end_time = current.start_time+maximum_sleep_duration;
+                }
+            } else {
+                if ( next.status == 'awake' ) {
+                    current.missing_event_after = true;
+                    current.end_time = Math.min( next.start_time, current.start_time+maximum_wake_duration );
+                } else if ( next.start_time < current.start_time + maximum_wake_duration ) {
+                    current.end_time = next.start_time;
+                    current.end_entry = next.start_entry;
+                } else {
+                    current.end_time = current.start_time+maximum_wake_duration;
+                }
+            }
+        }
+
+    }
+
+    /*
+     * Summary statistics for a set of numbers:
+     * 1. trim the numbers based on trim_amount
+     * 2. calculate the mean of the trimmed subset
+     * 3. calculate the standard deviation of the trimmed subset
+     */
+    function summary_statistics(records) {
+
+        function a_plus_b (a,b) { return a+b; }
+        function a_minus_b(a,b) { return a-b; }
+
+        var ret = {
+            records: records,
+        }, n;
+
+        if ( !records.length ) return ret;
+
+        // Calculate the normal mean and standard deviation:
+        var total_records = 0;
+        ret.mean = records.reduce(a_plus_b);
+        ret.standard_deviation = 0;
+        for ( n=0; n!=records.length; ++n ) {
+            if ( records[n] ) {
+                ++total_records;
+                ret.standard_deviation += Math.pow(records[n] - ret.mean, 2);
+            }
+        }
+        ret.mean /= total_records;
+        ret.standard_deviation = Math.sqrt( ret.standard_deviation / total_records );
+
+        // Calculate the median and IQR:
+        var sorted =
+            records
+            .filter(function(a) { return a; })
+            .sort(a_minus_b)
+        ;
+        ret.median = sorted[Math.floor(sorted.length/2)];
+        ret.interquartile_range = (
+                sorted[Math.ceil((sorted.length-1)*0.75)] -
+                sorted[Math.ceil((sorted.length-1)*0.25)]
+        );
+
+        // Calculate the trimmed mean and standard deviation:
+        var trimmed = sorted.slice(
+            Math.floor((sorted.length-1)*(1-trim_amount)    ),
+            Math.ceil ((sorted.length-1)*(  trim_amount) + 1)
+        );
+        if ( trimmed.length ) {
+            // calculate trimmed mean and standard deviation:
+            ret.trimmed_mean = trimmed.reduce(a_plus_b) / trimmed.length;
+            ret.trimmed_standard_deviation = 0;
+            for ( n=0; n!=trimmed.length; ++n ) ret.trimmed_standard_deviation += Math.pow(trimmed[n] - ret.trimmed_mean, 2);
+            ret.trimmed_standard_deviation = Math.sqrt( ret.trimmed_standard_deviation / trimmed.length );
+        }
+
+        return ret;
+
+    }
+
+    day_summary = summary_statistics(day_durations);
+    sleep_summary = summary_statistics(sleep_durations);
+
+    day_summary.recommended_average = day_summary.mean;
+    sleep_summary.recommended_average = sleep_summary.trimmed_mean;
+
     return {
-        sleeps                : sleeps,
-        sleep_duration_stats  : sleep_duration_stats,
-        day_duration_stats    : day_duration_stats,
-        suggested_day_lengths : suggested_day_lengths,
+        records: records,
+        day_summary: day_summary,
+        sleep_summary: sleep_summary,
     };
 
 }
 
 /**
+ * Calculate suggested day lengths
+ *
+ * <p>If a user has specified a preferred day length and a target wake
+ * time, we can suggest possible bed times based on the number of days
+ * between now and then.  Otherwise, we calculate a likely bed time
+ * based on recent data</p>
+ *
+ * <p>This function will normally return an array with two elements
+ * (indicating "early" and "late" bed times).  It will return an array
+ * with one element if it was only able to generate one
+ * recommendation.  And it will return <tt>undefined</tt> if no bed
+ * time could be calculated.</p>
+ *
+ * @memberof Diary
+ *
+ * @return {Object[]|undefined} list of sleep/wake periods
+ *
+ * @example
+ *     diary.suggested_day_lengths(); // returns something like the following:
+ *     [
+ *       {
+ *         bed_time: 123456789, // recommended time the user should next go to bed
+ *         day_length: 1234567, // number of milliseconds in a user's biological day
+ *         days_remaining: 123, // number of day_length's until the target
+ *       },
+ *       // there may also be a second record with the same structure
+ *     ]
+ *
+ */
+Diary.prototype.suggested_day_lengths = function() {
+
+    var sleep_wake_periods = this.sleep_wake_periods(new Date().getTime() - 180*24*60*60*1000),
+        records = sleep_wake_periods.records,
+        target = this.target_timestamp(),
+        day_length = this.preferred_day_length() || sleep_wake_periods.day_summary.recommended_average,
+        sleep_duration = sleep_wake_periods.sleep_summary.recommended_average,
+        latest_time,
+        n
+    ;
+
+    if ( !target && !day_length ) return undefined;
+
+    if ( !records.length ) {
+        // new user has not yet created a "wake" event:
+        latest_time = new Date();
+        if ( target <= latest_time ) return undefined;
+        return [{
+            days_remaining: Math.floor( target - latest_time ),
+            bed_time: latest_time + ( ( target - latest_time ) % day_length ) - sleep_duration,
+            day_length: day_length,
+        }];
+    }
+
+    latest_time = (
+        records[records.length-1].start_time +
+        ( ( records[records.length-1].status == 'asleep' ) ? sleep_duration : 0 )
+    );
+
+    if ( !target ) {
+        if ( day_length ) {
+            return [{
+                bed_time: latest_time + day_length - sleep_duration,
+                day_length: day_length,
+            }];
+        } else {
+            return undefined;
+        }
+    }
+
+
+    if ( target <= latest_time ) return undefined;
+    var time_remaining = target - latest_time,
+        days_remaining = time_remaining / day_length,
+        ret = []
+    ;
+    for ( var days = Math.floor(days_remaining); days <= Math.ceil(days_remaining); ++days ) {
+        if ( days > 0 ) {
+            var day_length = time_remaining/days;
+            ret.push({
+                days_remaining: days,
+                bed_time: latest_time + day_length - sleep_duration,
+                day_length: day_length,
+            });
+        }
+    }
+    return ret.length ? ret : undefined;
+
+}
+
+
+
+/**
  * Current target timestamp
+ *
+ * @memberof Diary
+ *
  * @return {number|NaN} current target (or zero if no current target)
  *
  * @example
@@ -734,7 +1138,11 @@ Diary.prototype.analyse = function() {
 Diary.prototype.target_timestamp = function() {
     for ( var n=this.data.entries.length-1; n>=0; --n ) {
         if ( this.data.entries[n].event == this.event_string_to_id.RETARGET ) {
-            return this.data.entries[n].related;
+            return (
+                (typeof(this.data.entries[n].related)=='number')
+                ? this.data.entries[n].related
+                : parseInt(this.data.entries[n].related,10)
+            );
         }
     }
     return 0;
@@ -742,6 +1150,9 @@ Diary.prototype.target_timestamp = function() {
 
 /**
  * Current sleep/wake mode
+ *
+ * @memberof Diary
+ *
  * @return {number|NaN} ID of the most recent sleep/wake event (if present)
  *
  * @example
@@ -763,21 +1174,62 @@ Diary.prototype.mode = function() {
     return NaN;
 }
 
-/**
- * Update the diary with the specified events
- *
- * @param {string} update - serialised update object
+/*
+ * EXPORT FORMATS
  */
-Diary.prototype.update = function(data) {
-    var update = data_structures.diary_update_type.decode(base64_decode(data));
-    if ( update.reset ) {
-        this.data.entries.splice( 0, this.data.entries.length );
-    }
-    this.data.entries.splice.apply(
-        this.data.entries,
-        [ update.start, update.delete_count ].concat(update.entries||[])
-    );
+
+/**
+ * Get a JSON string of the diary
+ * @memberof Diary
+ * @return {string}
+ */
+Diary.prototype.toJSON = function() {
+    return JSON.stringify(this.data.toJSON());
 }
+
+/**
+ * Get a list of columns describing the diary entries
+ * @memberof Diary
+ * @return {Array[]}
+ */
+Diary.prototype.toColumns = function() {
+    var ret = [
+        ["time","event","related time","comment"]
+    ];
+    this.data.entries.forEach( function(entry) {
+        ret.push([
+            entry.timestamp,
+            event_id_to_string[entry.event],
+            entry.related||'',
+            entry.comment||''
+        ]);
+    });
+    return ret;
+}
+
+/**
+ * Get a list of columns describing the analysed diary
+ * @memberof Diary
+ * @return {Array[]}
+ */
+Diary.prototype.toColumnsCalendar = function() {
+    var ret = [
+        ["Status","Start time","End time","Is the end time accurate?"]
+    ];
+    this.sleep_wake_periods().records.forEach(function(record) {
+        ret.push([
+            record.status,
+            record.start_time,
+            record.end_time||'',
+            record.end_entry?'YES':'NO'
+        ]);
+    });
+    return ret;
+}
+
+/*
+ * EXPORT THE CLASS
+ */
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = Diary;
