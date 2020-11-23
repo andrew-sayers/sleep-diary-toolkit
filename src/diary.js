@@ -394,10 +394,13 @@ Diary.prototype.server = function( server, send_all_entries, success_callback, e
                     }),
                     req = new XMLHttpRequest()
                 ;
+                self.data.server = server;
+                if ( !this.constructed_from_string ) {
+                    localStorage.setItem( 'diary:data', this.serialise() );
+                }
                 // save the data on the server:
                 req.onload = function(e) {
                     if ( req.status < 500 ) {
-                        self.data.server = server;
                         if ( send_all_entries ) {
                             self.data.serverEntriesSent = self.data.serverEntriesOffset = 0;
                         } else {
